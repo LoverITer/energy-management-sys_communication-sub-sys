@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <!--包含Spring boot对logback日志的默认配置-->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/spring.log}"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProfile name="dev">
+        <!--重写了Spring Boot框架 org/springframework/boot/logging/logback/file-appender.xml 配置-->
+        <appender name="TIME_FILE"
+                  class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+            <file>${LOG_FILE}</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>%d{yyyy-MM-dd}.%i.${LOG_FILE}</fileNamePattern>
+                <!--保留历史日志时间-->
+                <maxHistory>3</maxHistory>
+                <!--
+                Spring Boot默认情况下，日志文件100M时，会切分日志文件,这样设置日志文件会在100M时切分日志
+                -->
+                <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                    <maxFileSize>100MB</maxFileSize>
+                </timeBasedFileNamingAndTriggeringPolicy>
+
+            </rollingPolicy>
+        </appender>
+        <root level="debug">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="TIME_FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!dev">
+        <!--重写了Spring Boot框架 org/springframework/boot/logging/logback/file-appender.xml 配置-->
+        <appender name="TIME_FILE"
+                  class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <encoder>
+                <pattern>${FILE_LOG_PATTERN}</pattern>
+            </encoder>
+            <file>${LOG_FILE}</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>%d{yyyy-MM-dd}.%i.${LOG_FILE}</fileNamePattern>
+                <!--保留历史日志一个月的时间-->
+                <maxHistory>30</maxHistory>
+                <!--
+                Spring Boot默认情况下，日志文件100M时，会切分日志文件,这样设置日志文件会在100M时切分日志
+                -->
+                <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                    <maxFileSize>100MB</maxFileSize>
+                </timeBasedFileNamingAndTriggeringPolicy>
+
+            </rollingPolicy>
+        </appender>
+        <root level="ERROR">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="TIME_FILE"/>
+        </root>
+    </springProfile>
+
+    <!--mybatis log configure-->
+    <logger name="com.apache.ibatis" level="DEBUG"/>
+    <logger name="java.sql.Connection" level="DEBUG"/>
+    <logger name="java.sql.Statement" level="DEBUG"/>
+    <logger name="java.sql.PreparedStatement" level="DEBUG"/>
+
+</configuration>

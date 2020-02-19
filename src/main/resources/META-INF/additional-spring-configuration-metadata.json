@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "netty.server.port",
+      "type": "java.lang.String",
+      "description": "Description for netty.server.port."
+    }
+  ] }

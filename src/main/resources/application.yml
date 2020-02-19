@@ -1,0 +1,15 @@
+#公用环境
+spring:
+  profiles:
+    active: dev
+
+mybatis:
+  config-location: classpath:/mybatis/mybatis-config.xml
+  mapper-locations: classpath:/mybatis/mapper/*.xml
+
+logging:
+  config: classpath:logback-spring.xml
+
+netty:
+  server:
+    port: 9000

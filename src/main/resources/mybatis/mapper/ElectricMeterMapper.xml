@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.xust.mapper.ElectricMeterMapper">
+    <resultMap id="BaseResultMap" type="cn.edu.xust.bean.ElectricMeter">
+        <id column="electric_meter_id" jdbcType="INTEGER" property="electricMeterId"/>
+        <result column="user_id" jdbcType="INTEGER" property="userId"/>
+        <result column="user_balance" jdbcType="DECIMAL" property="userBalance"/>
+        <result column="electricity_price" jdbcType="DECIMAL" property="electricityPrice"/>
+        <result column="current_total_electricity" jdbcType="DOUBLE" property="currentTotalElectricity"/>
+        <result column="current_total_super_peak_electricity" jdbcType="DOUBLE"
+                property="currentTotalSuperPeakElectricity"/>
+        <result column="current_total_peak_electricity" jdbcType="DOUBLE" property="currentTotalPeakElectricity"/>
+        <result column="current_total_normal_electricity" jdbcType="DOUBLE" property="currentTotalNormalElectricity"/>
+        <result column="current_total_valley_electricity" jdbcType="DOUBLE" property="currentTotalValleyElectricity"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        electric_meter_id, user_id, user_balance, electricity_price, current_total_electricity,
+        current_total_super_peak_electricity, current_total_peak_electricity, current_total_normal_electricity,
+        current_total_valley_electricity
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from electric_meter
+        where electric_meter_id = #{electricMeterId,jdbcType=INTEGER}
+    </select>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete
+        from electric_meter
+        where electric_meter_id = #{electricMeterId,jdbcType=INTEGER}
+    </delete>
+
+    <insert id="insert" parameterType="cn.edu.xust.bean.ElectricMeter">
+        insert into electric_meter (electric_meter_id, user_id, user_balance,
+                                    electricity_price, current_total_electricity,
+                                    current_total_super_peak_electricity, current_total_peak_electricity,
+                                    current_total_normal_electricity, current_total_valley_electricity)
+        values (#{electricMeterId,jdbcType=INTEGER}, #{userId,jdbcType=INTEGER}, #{userBalance,jdbcType=DECIMAL},
+                #{electricityPrice,jdbcType=DECIMAL}, #{currentTotalElectricity,jdbcType=DOUBLE},
+                #{currentTotalSuperPeakElectricity,jdbcType=DOUBLE}, #{currentTotalPeakElectricity,jdbcType=DOUBLE},
+                #{currentTotalNormalElectricity,jdbcType=DOUBLE}, #{currentTotalValleyElectricity,jdbcType=DOUBLE})
+    </insert>
+
+    <insert id="insertSelective" parameterType="cn.edu.xust.bean.ElectricMeter">
+        insert into electric_meter
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="electricMeterId != null">
+                electric_meter_id,
+            </if>
+            <if test="userId != null">
+                user_id,
+            </if>
+            <if test="userBalance != null">
+                user_balance,
+            </if>
+            <if test="electricityPrice != null">
+                electricity_price,
+            </if>
+            <if test="currentTotalElectricity != null">
+                current_total_electricity,
+            </if>
+            <if test="currentTotalSuperPeakElectricity != null">
+                current_total_super_peak_electricity,
+            </if>
+            <if test="currentTotalPeakElectricity != null">
+                current_total_peak_electricity,
+            </if>
+            <if test="currentTotalNormalElectricity != null">
+                current_total_normal_electricity,
+            </if>
+            <if test="currentTotalValleyElectricity != null">
+                current_total_valley_electricity,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="electricMeterId != null">
+                #{electricMeterId,jdbcType=INTEGER},
+            </if>
+            <if test="userId != null">
+                #{userId,jdbcType=INTEGER},
+            </if>
+            <if test="userBalance != null">
+                #{userBalance,jdbcType=DECIMAL},
+            </if>
+            <if test="electricityPrice != null">
+                #{electricityPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="currentTotalElectricity != null">
+                #{currentTotalElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalSuperPeakElectricity != null">
+                #{currentTotalSuperPeakElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalPeakElectricity != null">
+                #{currentTotalPeakElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalNormalElectricity != null">
+                #{currentTotalNormalElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalValleyElectricity != null">
+                #{currentTotalValleyElectricity,jdbcType=DOUBLE},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="cn.edu.xust.bean.ElectricMeter">
+        update electric_meter
+        <set>
+            <if test="userId != null">
+                user_id = #{userId,jdbcType=INTEGER},
+            </if>
+            <if test="userBalance != null">
+                user_balance = #{userBalance,jdbcType=DECIMAL},
+            </if>
+            <if test="electricityPrice != null">
+                electricity_price = #{electricityPrice,jdbcType=DECIMAL},
+            </if>
+            <if test="currentTotalElectricity != null">
+                current_total_electricity = #{currentTotalElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalSuperPeakElectricity != null">
+                current_total_super_peak_electricity = #{currentTotalSuperPeakElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalPeakElectricity != null">
+                current_total_peak_electricity = #{currentTotalPeakElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalNormalElectricity != null">
+                current_total_normal_electricity = #{currentTotalNormalElectricity,jdbcType=DOUBLE},
+            </if>
+            <if test="currentTotalValleyElectricity != null">
+                current_total_valley_electricity = #{currentTotalValleyElectricity,jdbcType=DOUBLE},
+            </if>
+        </set>
+        where electric_meter_id = #{electricMeterId,jdbcType=INTEGER}
+    </update>
+
+    <update id="updateByPrimaryKey" parameterType="cn.edu.xust.bean.ElectricMeter">
+        update electric_meter
+        set user_id                              = #{userId,jdbcType=INTEGER},
+            user_balance                         = #{userBalance,jdbcType=DECIMAL},
+            electricity_price                    = #{electricityPrice,jdbcType=DECIMAL},
+            current_total_electricity            = #{currentTotalElectricity,jdbcType=DOUBLE},
+            current_total_super_peak_electricity = #{currentTotalSuperPeakElectricity,jdbcType=DOUBLE},
+            current_total_peak_electricity       = #{currentTotalPeakElectricity,jdbcType=DOUBLE},
+            current_total_normal_electricity     = #{currentTotalNormalElectricity,jdbcType=DOUBLE},
+            current_total_valley_electricity     = #{currentTotalValleyElectricity,jdbcType=DOUBLE}
+        where electric_meter_id = #{electricMeterId,jdbcType=INTEGER}
+    </update>
+</mapper>
