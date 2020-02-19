@@ -41,6 +41,14 @@ public class ElectricMeterServiceImpl implements ElectricMeterService {
     @Transactional(isolation = Isolation.REPEATABLE_READ,rollbackFor = Exception.class)
     @Override
     public int updateByElectricMeterIdSelective(ElectricMeter electricMeter) {
+        if(Objects.nonNull(electricMeter)){
+            try{
+                return electricMeterMapper.updateByPrimaryKeySelective(electricMeter);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
         return 0;
     }
 }

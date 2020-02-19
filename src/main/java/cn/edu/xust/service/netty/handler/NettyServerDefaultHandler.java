@@ -38,8 +38,8 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     /**
      * 成功失败标志的16进制码
      */
-    private static final String SUCCESS_FLAG_HEX = "73 75 63 63 65 73 73";
-    private static final String FAILURE_FLAG_HEX = "66 61 69 6c 75 72 65";
+    private static final String SUCCESS_FLAG_HEX = "73 75 63 63 65 73 73 ";
+    private static final String FAILURE_FLAG_HEX = "66 61 69 6c 75 72 65 ";
     @Autowired
     private ElectricMeterService electricMeterServiceImpl;
 
