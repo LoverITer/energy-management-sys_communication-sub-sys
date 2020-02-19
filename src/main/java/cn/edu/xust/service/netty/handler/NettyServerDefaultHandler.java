@@ -68,7 +68,14 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
         //设备请求的服务器端的地址用作监听设备请求的那个端口
         String servicePort = ctx.channel().localAddress().toString();
         //向数据库写数据
-        int result = electricMeterServiceImpl.add(electricMeter);
+
+        //尝试更新根据电表Id更新电表数据
+        int result = electricMeterServiceImpl.updateByElectricMeterIdSelective(electricMeter);
+
+        if(result<=0) {
+            //新增一条记录
+            result = electricMeterServiceImpl.add(electricMeter);
+        }
         System.out.println("向：" + servicePort.substring(servicePort.length() - 4, servicePort.length()) + " 端口写入数据");
         if (result > 0) {
             //返回成功的信息
@@ -105,7 +112,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     /**
      * 通道断开事件触发此方法
      *
-     * @param ctx  上下文
+     * @param ctx 上下文
      * @throws Exception
      */
     @Override

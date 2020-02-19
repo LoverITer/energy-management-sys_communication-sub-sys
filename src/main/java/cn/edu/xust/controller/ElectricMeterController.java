@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
+ * 测试示例
+ *
  * @author ：huangxin
  * @modified ：
  * @since ：2020/02/18 23:26
