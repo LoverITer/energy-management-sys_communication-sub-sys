@@ -2,10 +2,9 @@ package cn.edu.xust.controller;
 
 import cn.edu.xust.bean.ElectricMeter;
 import cn.edu.xust.service.ElectricMeterService;
-import com.alibaba.fastjson.JSONObject;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import cn.edu.xust.service.netty.NettyServer;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -25,20 +24,27 @@ public class ElectricMeterController {
         this.electricMeterService = electricMeterService;
     }
 
-    @RequestMapping(value = "/test")
+    /**
+     * 控制器层控制设备示例
+     * <strong>NettyServer.writeCommand()</strong>用于给设备写命令
+     *
+     * @param electricMeterId
+     * @return
+     */
+    @RequestMapping(value = "/control/{electricMeterId}")
     @ResponseBody
-    public ElectricMeter equipment() {
-        //入参 设备id   根据设备id  查询设备最后一次录入数据时候的 ip地址  实现下发
-
+    public ElectricMeter equipment(@PathVariable int electricMeterId) {
         //需要给设备发送的 16进制数据
-        String msg = " 16 27 88 90 12 45 31 15 41 ";
+        String cmd = " 16 27 88 90 12 45 31 15 41 ";
 
-        ByteBuf message = Unpooled.copiedBuffer(msg.getBytes());
-        ElectricMeter electricMeter = new ElectricMeter();
-        electricMeter.setUserId(1);
-        electricMeter.setElectricMeterId(2323);
-        electricMeter.setCurrentTotalElectricity(353.7);
-        electricMeterService.add(electricMeter);
+        ElectricMeter electricMeter = electricMeterService.getElectricMeterById(electricMeterId);
+
+        /**
+         * 执行设备控制
+         * 入参: 设备ip和命令
+         * 根据写入map 的key（以ip为key）取到map中的SocketChannel 然后执行writeAndFlush发送指令数据数据
+         */
+        NettyServer.writeCommand(electricMeter.getElectricityIp(), cmd);
         return electricMeter;
     }
 

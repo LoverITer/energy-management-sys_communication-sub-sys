@@ -1,8 +1,13 @@
-package cn.edu.xust.service.netty.impl;
+package cn.edu.xust.service.netty;
 
+import cn.edu.xust.bean.ElectricMeter;
+import cn.edu.xust.exception.NotFoundDeviceException;
+import cn.edu.xust.service.ElectricMeterService;
 import cn.edu.xust.service.netty.NettyAsyncService;
 import cn.edu.xust.service.netty.handler.NettyServerDefaultHandler;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -14,29 +19,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * Netty服务器端，在SpringBoot上必须异步执行，否者会阻塞main主线程导致其他服务不可用
+ * Netty服务器端，在SpringBoot上须异步执行，否者会阻塞main主线程导致其他服务不可用
  *
  * @author ：huangxin
  * @modified ：
  * @since ：2020/02/18 16:12
  */
-@Service
+@Component
 @Slf4j
-public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
+public class NettyServer implements NettyAsyncService,
+        ApplicationRunner, ApplicationListener<ContextClosedEvent> {
 
     @Autowired
     private NettyServerDefaultHandler nettyServerDefaultHandler;
-    private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    private EventLoopGroup workerGroup = new NioEventLoopGroup();
+    @Autowired
+    private ElectricMeterService electricMeterServiceImpl;
+    /**
+     * 监听的端口
+     */
     @Value("${netty.server.port}")
-    private  int port;
+    private int port;
+    /**
+     * bossGroup：负责处理连接请求的线程组
+     */
+    private EventLoopGroup bossGroup = new NioEventLoopGroup();
+    /**
+     * worker：负责处理具体I/O时间的线程组
+     */
+    private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 
     @Async(value = "asyncServiceExecutor")
@@ -51,7 +73,7 @@ public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
                     .childOption(ChannelOption.TCP_NODELAY, true)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         /**
-                         * 每一个客户端连接上门来后都会执行这个方法，主要用于设置IO流的编码、解码以及IO事件的处理器等
+                         * 每一个客户端连接上来后都会执行这个方法，主要用于设置IO流的编码、解码以及IO事件的处理器等
                          * @param socketChannel
                          * @throws Exception
                          */
@@ -59,12 +81,11 @@ public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             ChannelPipeline pipeline = socketChannel.pipeline();
                             pipeline.addLast(nettyServerDefaultHandler);
-                            log.info("client" + socketChannel.remoteAddress() + " connected successfully！");
                         }
                     });
             ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
             if (channelFuture.isSuccess()) {
-                log.info("Netty Server started successfully, listening on " + channelFuture.channel().localAddress());
+                log.info("Netty Server started successful, listening on " + channelFuture.channel().localAddress());
             }
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
@@ -77,7 +98,6 @@ public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
     }
 
 
-    @PreDestroy
     @Override
     public void destroy() {
         bossGroup.shutdownGracefully().syncUninterruptibly();
@@ -86,8 +106,52 @@ public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
     }
 
 
+    /**
+     * SpringBoot启动的时候启动Netty服务端开始监听
+     *
+     * @param args
+     * @throws Exception
+     */
     @Override
     public void run(ApplicationArguments args) throws Exception {
         this.connect();
     }
+
+    /**
+     * SpringBoot关闭的时候销毁Netty的两个线程组
+     *
+     * @param contextClosedEvent
+     */
+    @Override
+    public void onApplicationEvent(ContextClosedEvent contextClosedEvent) {
+        this.destroy();
+    }
+
+
+    /**
+     * 执行设备控制，向设备发送命令
+     *
+     * @param deviceIp 设备ID
+     * @param cmd      下发的命令
+     * @return true 表示命令下发成功   false 表示命令下发失败
+     */
+    public static boolean writeCommand(String deviceIp, String cmd) {
+        if (Objects.isNull(deviceIp) && Objects.isNull(NettyServerDefaultHandler.getDevicesMap())) {
+            //没有找到对应的设备,抛出异常
+            throw new NotFoundDeviceException();
+        }
+        if(Objects.isNull(cmd)){
+            throw new IllegalArgumentException("参数cmd不能为空");
+        }
+
+        Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
+        if (Objects.nonNull(channel)) {
+            ChannelFuture channelFuture = channel.writeAndFlush(Unpooled.copiedBuffer(cmd.getBytes()));
+            return channelFuture.isSuccess();
+        } else {
+            throw new NotFoundDeviceException();
+        }
+
+    }
+
 }

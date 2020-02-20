@@ -3,9 +3,11 @@ package cn.edu.xust.service.netty.handler;
 
 import cn.edu.xust.bean.ElectricMeter;
 import cn.edu.xust.service.ElectricMeterService;
+import cn.edu.xust.service.netty.NettyServer;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.io.UnsupportedEncodingException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.SocketHandler;
 
 /**
  * Netty服务端业务处理handler，用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
@@ -30,10 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
-    /**
-     * 将当前客户端连接存入map实现控制设备下发参数
-     */
-    private static ConcurrentHashMap<String, ChannelHandlerContext> map = new ConcurrentHashMap<>();
+
     /**
      * 成功失败标志的16进制码
      */
@@ -41,7 +41,30 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     private static final String FAILURE_FLAG_HEX = "66 61 69 6c 75 72 65 ";
     @Autowired
     private ElectricMeterService electricMeterServiceImpl;
+    /**
+     * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
+     */
+    private static ConcurrentHashMap<String, Channel> devices = new ConcurrentHashMap<>();
 
+
+    /**
+     * 在客户端和服务器首次建立通信通道的时候触发次方法
+     *
+     * @param ctx 上下文
+     * @throws Exception
+     */
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        Channel socketChannel = ctx.channel();
+        /*将设备的请求地址当作 map 的key*/
+        String url = socketChannel.remoteAddress().toString();
+        if (!devices.containsKey(url)) {
+            devices.put(url, ctx.channel());
+            log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Current connections "+devices.size());
+            //连接后和设备进行首次通信确认身份
+            writeCallBackMessage(ctx,"Identity confirmation");
+        }
+    }
 
     /**
      * 通道有读取事件时触发这个方法
@@ -52,38 +75,23 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws UnsupportedEncodingException {
         ByteBuf readMessage = (ByteBuf) msg;
-        //解析客户端json 数据为电表对象
+        /*解析客户端json数据生成电表数据对象*/
         ElectricMeter electricMeter = JSONObject.parseObject(readMessage.toString(CharsetUtil.UTF_8), ElectricMeter.class);
-        System.out.println(electricMeter.toString());
-
-        //设备请求地址（将设备的请求地址当作 map 的key），取到的值为客户端的 ip+端口号
-        String url = ctx.channel().remoteAddress().toString();
-        System.out.println(url + ": " + readMessage.toString(CharsetUtil.UTF_8));
-
-        //当url为空的时候将当前的设备ip+端口存进map，当做下发设备的标识的key
-        if (Objects.isNull(url)) {
-            map.put(url, ctx);
-        }
-        //设备请求的服务器端的地址用作监听设备请求的那个端口
-        String servicePort = ctx.channel().localAddress().toString();
-        //向数据库写数据
-        ///autoGenerationTable.create();
-        //尝试根据电表Id更新电表数据
-        int result = electricMeterServiceImpl.updateByElectricMeterIdSelective(electricMeter);
-
-        if (result <= 0) {
-            //更新失败就新增一条记录
-            result = electricMeterServiceImpl.add(electricMeter);
-        }
-        System.out.println("向：" + servicePort.substring(servicePort.length() - 4, servicePort.length()) + " 端口写入数据");
-        if (result > 0) {
-            //返回成功的信息
-            writeCallBackMessage(ctx, SUCCESS_FLAG_HEX);
-            log.debug("写入数据成功");
-        } else {
-            //返回失败的信息
-            writeCallBackMessage(ctx, FAILURE_FLAG_HEX);
-            log.error("写入数据失败");
+        if (Objects.nonNull(electricMeter)) {
+            electricMeter.setElectricityIp(ctx.channel().remoteAddress().toString());
+            /*尝试根据电表Id更新电表数据*/
+            int result = electricMeterServiceImpl.updateByElectricMeterIdSelective(electricMeter);
+            if (result <= 0) {
+                /*更新没有结果就新增一条记录*/
+                result = electricMeterServiceImpl.add(electricMeter);
+            }
+            String serverPort = ctx.channel().localAddress().toString();
+            log.info("向：" + serverPort.substring(serverPort.length() - 4) + " 端口写入数据");
+            if (result > 0) {
+                log.debug("Data writing to the database successfully.");
+            } else {
+                log.error("Data writing to the database failed.");
+            }
         }
     }
 
@@ -117,7 +125,8 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("客户端 " + ctx.channel().remoteAddress() + "断开了连接");
-        //异步的关闭和客户端的通信通道，以免浪费资源
+        devices.remove(ctx.channel().remoteAddress().toString());
+        /*异步的关闭和客户端的通信通道，以免浪费资源*/
         ctx.channel().closeFuture().sync();
     }
 
@@ -130,8 +139,14 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        log.error(cause.getMessage());
+        devices.remove(ctx.channel().remoteAddress().toString().replace('/', ' '));
         ctx.close();
+    }
+
+
+    public static ConcurrentHashMap<String, Channel> getDevicesMap() {
+        return devices;
     }
 
 
