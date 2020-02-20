@@ -1,0 +1,60 @@
+<bean id="shardingDataSource" class="com.alibaba.druid.pool.DruidDataSource"
+      init-method="init" destroy-method="close"
+      xmlns:sharding="http://shardingsphere.io/schema/shardingsphere/sharding" xmlns:sharding="">
+    <property name="driverClassName" value="${sharding.jdbc.driver}" />
+    <property name="url" value="${sharding.jdbc.url}" />
+    <property name="username" value="${sharding.jdbc.username}" />
+    <property name="password" value="${sharding.jdbc.password}" />
+    <!-- 配置获取连接等待超时的时间 -->
+    <property name="maxWait" value="6000" />
+
+    <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+    <property name="timeBetweenEvictionRunsMillis" value="60000" />
+
+    <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+    <property name="minEvictableIdleTimeMillis" value="300000" />
+
+    <property name="validationQuery" value="SELECT 'x'" />
+    <property name="testWhileIdle" value="true" />
+    <property name="testOnBorrow" value="false" />
+    <property name="testOnReturn" value="false" />
+
+    <!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+    <property name="poolPreparedStatements" value="false" />
+    <property name="maxPoolPreparedStatementPerConnectionSize"
+              value="20" />
+    <!-- 配置监控统计拦截的filters -->
+    <property name="filters" value="stat" />
+</bean>
+<!-- 配置分表算法类，后面会给出这个类 -->
+<bean id="shardingAlgorithm" class="com.example.shardingsphere.util.ShardingAlgorithm" />
+
+<!-- 根据"id"字段来分表 t_sentinel_metric是要主表名称-->
+<sharding:standard-strategy id="tableShardingStrategy"
+                            sharding-column="id" precise-algorithm-ref="shardingAlgorithm" />
+<sharding:data-source id="shardingDS">
+<sharding:sharding-rule data-source-names="shardingDataSource">
+    <sharding:table-rules>
+        <sharding:table-rule logic-table="t_sentinel_metric"
+                             table-strategy-ref="tableShardingStrategy" />
+    </sharding:table-rules>
+</sharding:sharding-rule>
+</sharding:data-source>
+<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+<property name="dataSource" ref="shardingDS" />
+<property name="mapperLocations"
+          value="classpath*:mapper/**/*Mapper.xml" />
+<property name="typeAliasesPackage" value="com.example.shardingsphere.dao.model" />
+</bean>
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+<property name="basePackage" value="com.example.shardingsphere.dao.mapper" />
+<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+<!-- <property name="annotationClass" value="com.gmall88.server.mybatis.MyBatisRepository"/> -->
+</bean>
+<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate"
+      scope="prototype">
+<constructor-arg index="0" ref="sqlSessionFactory" />
+</bean>
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+<property name="dataSource" ref="shardingDS"></property>
+</bean>

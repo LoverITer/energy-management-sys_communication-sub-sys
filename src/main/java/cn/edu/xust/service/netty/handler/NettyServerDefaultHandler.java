@@ -10,8 +10,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Netty服务端业务处理handler，用于监听并处理各种I/O事件，并将设备传上来的数据写进数据库
+ * Netty服务端业务处理handler，用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
  *
  * @author ：huangxin
  * @modified ：
@@ -28,9 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 @Sharable
+@Slf4j
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger log = LoggerFactory.getLogger(NettyServerDefaultHandler.class);
     /**
      * 将当前客户端连接存入map实现控制设备下发参数
      */
@@ -68,12 +67,12 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
         //设备请求的服务器端的地址用作监听设备请求的那个端口
         String servicePort = ctx.channel().localAddress().toString();
         //向数据库写数据
-
-        //尝试更新根据电表Id更新电表数据
+        ///autoGenerationTable.create();
+        //尝试根据电表Id更新电表数据
         int result = electricMeterServiceImpl.updateByElectricMeterIdSelective(electricMeter);
 
-        if(result<=0) {
-            //新增一条记录
+        if (result <= 0) {
+            //更新失败就新增一条记录
             result = electricMeterServiceImpl.add(electricMeter);
         }
         System.out.println("向：" + servicePort.substring(servicePort.length() - 4, servicePort.length()) + " 端口写入数据");

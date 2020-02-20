@@ -31,34 +31,33 @@
         </dependency>
         <!--mysql数据连接驱动-->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
-        </dependency>
-        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!--druid数据源-->
+        <!--druid-->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-starter</artifactId>
-            <version>1.1.16</version>
+            <version>1.1.10</version>
         </dependency>
-
+        <!--sharding-jdbc-->
+        <!--<dependency>
+            <groupId>io.shardingsphere</groupId>
+            <artifactId>sharding-jdbc-spring-boot-starter</artifactId>
+            <version>3.1.0.M1</version>
+        </dependency>-->
         <!-- Netty依赖 -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.44.Final</version>
         </dependency>
-
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>[1.2.31,)</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
@@ -74,6 +73,22 @@
                     <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.6.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--日志-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.12</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

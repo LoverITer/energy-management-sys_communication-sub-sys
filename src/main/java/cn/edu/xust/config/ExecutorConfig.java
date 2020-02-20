@@ -1,5 +1,6 @@
 package cn.edu.xust.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -19,8 +20,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Configuration
 @EnableAsync
+@Slf4j
 public class ExecutorConfig {
-    private static Logger logger = LoggerFactory.getLogger(ExecutorConfig.class.getName());
 
     @Bean
     public Executor asyncServiceExecutor() {

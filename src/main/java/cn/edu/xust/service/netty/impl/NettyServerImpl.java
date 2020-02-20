@@ -7,6 +7,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +28,9 @@ import javax.annotation.PreDestroy;
  * @since ：2020/02/18 16:12
  */
 @Service
+@Slf4j
 public class NettyServerImpl implements NettyAsyncService, ApplicationRunner {
 
-    private static Logger log = LoggerFactory.getLogger(NettyServerImpl.class);
     @Autowired
     private NettyServerDefaultHandler nettyServerDefaultHandler;
     private EventLoopGroup bossGroup = new NioEventLoopGroup();

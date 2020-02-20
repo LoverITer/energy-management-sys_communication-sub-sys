@@ -45,6 +45,14 @@ spring:
     #通过connectProperties属性来打开mergeSql功能
     connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
 
+
 logging:
   level:
     root: debug
+
+sharding:
+  jdbc:
+    driver: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.92.128:3306/energy_management_sys?autoReconnect=true&useSSL=false&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
