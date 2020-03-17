@@ -1,20 +1,15 @@
-package cn.edu.xust.service.netty;
+package cn.edu.xust.communication.server;
 
-import cn.edu.xust.bean.ElectricMeter;
-import cn.edu.xust.exception.NotFoundDeviceException;
+import cn.edu.xust.communication.exception.NotFoundDeviceException;
+import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
+import cn.edu.xust.communication.util.DLT645FrameUtils;
 import cn.edu.xust.service.ElectricMeterService;
-import cn.edu.xust.service.netty.NettyAsyncService;
-import cn.edu.xust.service.netty.handler.NettyServerDefaultHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -23,11 +18,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.PreDestroy;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -46,18 +38,12 @@ public class NettyServer implements NettyAsyncService,
     private NettyServerDefaultHandler nettyServerDefaultHandler;
     @Autowired
     private ElectricMeterService electricMeterServiceImpl;
-    /**
-     * 监听的端口
-     */
+    /**监听的端口:可以在SpringBoot配置文件中配置*/
     @Value("${netty.server.port}")
     private int port;
-    /**
-     * bossGroup：负责处理连接请求的线程组
-     */
+    /** bossGroup：负责处理连接请求的线程组*/
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    /**
-     * worker：负责处理具体I/O时间的线程组
-     */
+    /** worker：负责处理具体I/O时间的线程组*/
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 
@@ -133,10 +119,9 @@ public class NettyServer implements NettyAsyncService,
      *
      * @param deviceIp 设备ID
      * @param cmd      下发的命令
-     * @return true 表示命令下发成功   false 表示命令下发失败
      */
-    public static boolean writeCommand(String deviceIp, String cmd) {
-        if (Objects.isNull(deviceIp) && Objects.isNull(NettyServerDefaultHandler.getDevicesMap())) {
+    public static void writeCommand(String deviceIp, String cmd) {
+        if (Objects.isNull(deviceIp) || Objects.isNull(NettyServerDefaultHandler.getDevicesMap())) {
             //没有找到对应的设备,抛出异常
             throw new NotFoundDeviceException();
         }
@@ -146,8 +131,7 @@ public class NettyServer implements NettyAsyncService,
 
         Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
         if (Objects.nonNull(channel)) {
-            ChannelFuture channelFuture = channel.writeAndFlush(Unpooled.copiedBuffer(cmd.getBytes()));
-            return channelFuture.isSuccess();
+            DLT645FrameUtils.writeMessage2Client(channel,cmd);
         } else {
             throw new NotFoundDeviceException();
         }

@@ -1,8 +1,8 @@
 package cn.edu.xust.controller;
 
 import cn.edu.xust.bean.ElectricMeter;
+import cn.edu.xust.communication.server.NettyServer;
 import cn.edu.xust.service.ElectricMeterService;
-import cn.edu.xust.service.netty.NettyServer;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,13 +33,13 @@ public class ElectricMeterController {
      */
     @RequestMapping(value = "/control/{electricMeterId}")
     @ResponseBody
-    public ElectricMeter equipment(@PathVariable int electricMeterId) {
+    public ElectricMeter equipment(@PathVariable String electricMeterId) {
         //需要给设备发送的 16进制数据
-        String cmd = " 16 27 88 90 12 45 31 15 41 ";
+        String cmd = "68 37 03 00 92 81 39 68 11 04 33 33 34 33 38 16";
 
         ElectricMeter electricMeter = electricMeterService.getElectricMeterById(electricMeterId);
 
-        /**
+        /**11
          * 执行设备控制
          * 入参: 设备ip和命令
          * 根据写入map 的key（以ip为key）取到map中的SocketChannel 然后执行writeAndFlush发送指令数据数据

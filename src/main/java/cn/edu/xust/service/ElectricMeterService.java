@@ -31,5 +31,5 @@ public interface ElectricMeterService {
      * @param deviceId 设备Id
      * @return ElectricMeter
      */
-    ElectricMeter getElectricMeterById(int deviceId);
+    ElectricMeter getElectricMeterById(String deviceId);
 }

@@ -8,9 +8,9 @@ spring:
     #指定使用Druid数据源
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.92.128:3306/energy_management_sys?autoReconnect=true&useSSL=false&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.92.141:3306/energy_management_sys?autoReconnect=true&useSSL=false&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
     username: root
-    password: 123456
+    password: 95162437hx$
     druid:
       stat-view-servlet:
         enabled: true
@@ -48,11 +48,11 @@ spring:
 
 logging:
   level:
-    root: debug
+    root: info
 
 sharding:
   jdbc:
     driver: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.92.128:3306/energy_management_sys?autoReconnect=true&useSSL=false&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.92.141:3306/energy_management_sys?autoReconnect=true&useSSL=false&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
     username: root
-    password: 123456
+    password: 95162437hx$

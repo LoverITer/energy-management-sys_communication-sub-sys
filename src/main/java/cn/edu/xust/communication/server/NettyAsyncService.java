@@ -1,4 +1,4 @@
-package cn.edu.xust.service.netty;
+package cn.edu.xust.communication.server;
 
 /**
  * Netty异步任务接口，Netty任务必须异步的执行，不然会阻塞SpringBoot主线程

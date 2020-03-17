@@ -54,9 +54,9 @@ public class ElectricMeterServiceImpl implements ElectricMeterService {
 
     @Transactional(isolation = Isolation.REPEATABLE_READ, rollbackFor = Exception.class)
     @Override
-    public ElectricMeter getElectricMeterById(int deviceId) {
+    public ElectricMeter getElectricMeterById(String deviceId) {
         ElectricMeter electricMeter = null;
-        if (deviceId > 0) {
+        if (Objects.nonNull(deviceId)&&Long.parseLong(deviceId)>0) {
             try {
                 electricMeter = electricMeterMapper.selectByPrimaryKey(deviceId);
             } catch (Exception e) {

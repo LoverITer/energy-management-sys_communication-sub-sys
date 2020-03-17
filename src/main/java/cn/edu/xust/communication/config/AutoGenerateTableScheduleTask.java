@@ -1,4 +1,4 @@
-package cn.edu.xust.config;
+package cn.edu.xust.communication.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 /**
- * 自动生成表定时任务，每月的最后一天的23:00执行这个任务
+ * 自动生成数据表定时任务，每月的最后一天的23:00执行这个任务
  *
  * @author ：huangxin
  * @modified ：
