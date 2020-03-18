@@ -7,31 +7,31 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 10:58
  */
-public enum ElectricMeterClearer {
+public enum AmmeterClearer {
 
     /**
      * 清空电能表内电能量、最大需量及发生时间、冻结量、事件记录、负荷记录等数据
      * 主站请求读电能表数据
      * 数据域长度：L=08H+m(数据长度)
      */
-    MasterRequestFrame("1AH"),
+    MasterRequestFrame("1A"),
 
     /**
      * 从站响应数据
      * 数据域长度：L=00H
      */
-    SalveResponseFrame("9AH"),
+    SalveResponseFrame("9A"),
 
 
     /**
      * 从站异常应答
      * 数据长度：L=01H
      */
-    SlaveExceptionResponseFrame("DAH");
+    SlaveExceptionResponseFrame("DA");
 
     private final String controlCode;
 
-    ElectricMeterClearer(String controlCode) {
+    AmmeterClearer(String controlCode) {
         this.controlCode = controlCode;
     }
 

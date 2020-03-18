@@ -7,7 +7,7 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 10:53
  */
-public enum ElectricMeterPassModifier {
+public enum AmmeterPassModifier {
     /**
      * 主站请求修改从站密码设置
      * 数据域长度：L=0CH
@@ -16,33 +16,29 @@ public enum ElectricMeterPassModifier {
      * 注2：该命令必须与编程键配合使用；如无编程键，不支持该命令。
      * 注3：修改密码时，需PAN≥PA0。
      */
-    MasterRequestFrame("18H"),
+    MasterRequestFrame("18"),
 
     /**
      * 从站响应数据
      * 数据域长度：L=04H
      * 数据域：PANP0NP1NP2N（新编入的密码权限及密码）
      */
-    SalveResponseFrame("98H"),
+    SalveResponseFrame("98"),
 
     /**
      * 从站异常应答
      * 数据长度：L=01H
      */
-    SlaveExceptionResponseFrame("D8H");
+    SlaveExceptionResponseFrame("D8");
 
 
-    private String ControlCode;
+    private final String ControlCode;
 
-    ElectricMeterPassModifier(String controlCode) {
+    AmmeterPassModifier(String controlCode) {
         ControlCode = controlCode;
     }
 
     public String getControlCode() {
         return ControlCode;
-    }
-
-    public void setControlCode(String controlCode) {
-        ControlCode = controlCode;
     }
 }

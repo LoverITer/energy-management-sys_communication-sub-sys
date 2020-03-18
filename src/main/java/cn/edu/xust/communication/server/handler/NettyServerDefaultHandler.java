@@ -2,6 +2,7 @@ package cn.edu.xust.communication.server.handler;
 
 
 import cn.edu.xust.bean.ElectricMeter;
+import cn.edu.xust.communication.protocol.DLT645Frame;
 import cn.edu.xust.communication.util.DLT645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.service.ElectricMeterService;
@@ -34,13 +35,23 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
+     * key 存通道的ip , value 是服务器和客户端之间的通信通道
      */
     private static ConcurrentHashMap<String, Channel> devices = new ConcurrentHashMap<>();
+
+    /**
+     * 当通道读取电表的数据后首先将原始数据放入到此Map中，等待程序的后续程序
+     * key 存通道的ip ,value 存电表当前的读取到的最新数据
+     */
+    private static ConcurrentHashMap<String, ElectricMeter> ammeters = new ConcurrentHashMap<>();
 
     public static ConcurrentHashMap<String, Channel> getDevicesMap() {
         return devices;
     }
 
+    public static ConcurrentHashMap<String, ElectricMeter> getAmmeterMap() {
+        return ammeters;
+    }
 
     /**
      * 在客户端和服务器首次建立通信通道的时候触发次方法
@@ -52,12 +63,12 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel socketChannel = ctx.channel();
         /*将设备的请求地址当作 map 的key*/
-        String ip = socketChannel.remoteAddress().toString();
-        if (!devices.containsKey(ip)) {
-            devices.put(ip, ctx.channel());
+        String remoteAddress = socketChannel.remoteAddress().toString();
+        if (!devices.containsKey(remoteAddress)) {
+            devices.put(remoteAddress, ctx.channel());
             log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Current connections " + devices.size());
-            //建立连接后和设备进行首次通信确认身份
-            DLT645FrameUtils.writeMessage2Client(ctx.channel(), "68 37 03 00 92 81 39 68 11 04 33 33 34 33 38 16");
+            /**  建立连接后和设备进行首次通信确认身份*/
+            DLT645FrameUtils.writeMessage2Client(ctx.channel(), DLT645Frame.BROADCAST_FRAME);
         }
     }
 
@@ -71,16 +82,27 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         try {
             ByteBuf buffer = (ByteBuf) msg;
+            //客户端IP
             String remoteAddress = ctx.channel().remoteAddress().toString();
             byte[] bytes = new byte[buffer.readableBytes()];
             //复制内容到字节数组
             buffer.readBytes(bytes);
             String hexString = HexConverter.receiveHexToString(bytes);
+            System.out.println("hexString:" + hexString);
             System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
-            ElectricMeter meter = new ElectricMeter();
-            meter.setElectricityIp(remoteAddress);
-            meter.setElectricMeterId("398192000337");
-            electricMeterServiceImpl.updateByElectricMeterIdSelective(meter);
+            ElectricMeter ammeter = new ElectricMeter();
+            //从响应数据中解析出设备的ID
+            String ammeterId = DLT645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
+            ammeter.setElectricMeterId(ammeterId);
+            ammeter.setElectricityIp(remoteAddress);
+
+            ammeters.put(remoteAddress, ammeter);
+            //及时更新数据库中对应表的消息
+            int ret = electricMeterServiceImpl.updateByElectricMeterIdSelective(ammeter);
+            if (ret == 0) {
+                //尝试更新发现在数据库没有该设别的记录时，新增一个设备
+                electricMeterServiceImpl.add(ammeter);
+            }
         } catch (Exception e) {
             log.error(e.getMessage());
         }

@@ -261,4 +261,20 @@ public class ElectricMeter {
     public void setCurrentTotalValleyElectricity(Double currentTotalValleyElectricity) {
         this.currentTotalValleyElectricity = currentTotalValleyElectricity;
     }
+
+    @Override
+    public String toString() {
+        return "ElectricMeter{" +
+                "electricMeterId='" + electricMeterId + '\'' +
+                ", userBalance=" + userBalance +
+                ", electricityPrice=" + electricityPrice +
+                ", currentTotalElectricity=" + currentTotalElectricity +
+                ", currentTotalSuperPeakElectricity=" + currentTotalSuperPeakElectricity +
+                ", currentTotalPeakElectricity=" + currentTotalPeakElectricity +
+                ", currentTotalNormalElectricity=" + currentTotalNormalElectricity +
+                ", currentTotalValleyElectricity=" + currentTotalValleyElectricity +
+                ", electricityIp='" + electricityIp + '\'' +
+                ", electricityArea='" + electricityArea + '\'' +
+                '}';
+    }
 }

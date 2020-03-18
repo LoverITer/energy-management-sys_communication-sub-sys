@@ -1,6 +1,5 @@
 package cn.edu.xust.communication.util;
 
-import cn.edu.xust.communication.enums.ElectricMeterReader;
 import cn.edu.xust.communication.protocol.DLT645Frame;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -22,10 +21,8 @@ import java.util.Stack;
 @Slf4j
 public final class DLT645FrameUtils {
 
-
     private DLT645FrameUtils() {
     }
-
 
     /**
      * 读取数据
@@ -54,7 +51,7 @@ public final class DLT645FrameUtils {
      * @param meterNumber 电表编号
      * @return
      */
-    private static String getAddressFiled(String meterNumber) {
+    public static String getAddressFiled(String meterNumber) {
         if (Objects.isNull(meterNumber) || meterNumber.length() == 0) {
             throw new IllegalArgumentException("meter number must not be empty");
         }
@@ -74,28 +71,26 @@ public final class DLT645FrameUtils {
     }
 
     /**
-     * <code>
+     * 从电表响应的16进制帧数据中解析出电表的表号
+     * <pre>
      * 电表正常回应数据格式：
-     * 68 [37 03 00 92 81 39] 68 91 08 33 33 34 33 37 33 33 33 8C 16"
-     * |<----解析地址码-->|
-     * </>
+     * 68[370300928139]68910833333433373333338C16"
+     *   |<--地址码-->|
+     * <pre/>
      *
-     * @param responseMessage
-     * @return
+     * @param hexString 16进制字符串
+     * @return 电表的表号
      */
-    public static String getEleMeterId2AddressFiled(String responseMessage) {
-        if (Objects.isNull(responseMessage)) {
-            throw new NullPointerException("param can't be null");
+    public static String getAmmeterIdFromResponseFrame(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            throw new NullPointerException("Illegal frame , cannot be parsed!");
         }
         StringBuilder eleMeterId = new StringBuilder();
-        String[] messageArray = responseMessage.split(" ");
+        String responseFrame = HexConverter.fillBlank(hexString);
+        String[] messageArray = Objects.requireNonNull(responseFrame).split(" ");
         Stack<String> stack = new Stack<>();
-        if (responseMessage.startsWith("FE")) {
-            //TODO
-        } else {
-            for (int i = 1; i <= 6; i++) {
-                stack.push(messageArray[i]);
-            }
+        for (int i = 1; i <= 6; i++) {
+            stack.push(messageArray[i]);
         }
         while (!stack.isEmpty()) {
             String bit = stack.pop();
@@ -107,30 +102,140 @@ public final class DLT645FrameUtils {
     /**
      * 计算DL/T645帧数据校验和
      *
-     * @param hexFrameStr 16进制帧字符串
+     * @param hexString 16进制字符串
      * @return 校验和
      */
-    public static String checkSum(String hexFrameStr) {
-        if (Objects.isNull(hexFrameStr) || hexFrameStr.length() == 0) {
-            throw new IllegalArgumentException("Hex Frame string must not be empty");
+    public static String checkSum(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() == 0) {
+            throw new IllegalArgumentException("Hex frame string must not be empty");
         }
-        String[] hexs = hexFrameStr.split(" ");
-        int o = 0;
+        String[] hexs = hexString.split(" ");
+        int oct = 0;
         for (String str : hexs) {
             //每个字节转为10进制后取模256
             if (!"".equals(str) && !" ".equals(str)) {
-                o += Integer.parseInt(str, 16) % 256;
+                oct += Integer.parseInt(str, 16) % 256;
             }
         }
-        String hex = Integer.toHexString(o);
+        String hex = Integer.toHexString(oct);
         return hex.substring(hex.length() - 2);
     }
 
     /**
+     * 根据16进制数据解析出控制码
+     * <pre>
+     * 电表正常回应数据格式：
+     * 6837030092813968[91]0833333433373333338C16"
+     *                  /\
+     *                  ||
+     *                控制码
+     * <pre/>
+     * @param hexString 16进制字符串
+     * @return 控制码
+     */
+    public static String getControlBit(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        String[] commands = HexConverter.getCommandStringArray(hexString);
+        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+            return commands[8];
+        }
+        return null;
+    }
+
+    /**
+     * 根据16进制字符串解析出数据域的长度
+     * <pre>
+     * 电表正常回应数据格式：
+     * 683703009281396891[08]33333433373333338C16"
+     *                    /\
+     *                    ||
+     *                数据域的长度
+     * <pre/>
+     * @param hexString 16进制字符串
+     * @return 数据域的长度
+     */
+    public static String getDataLength(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        String[] commands = HexConverter.getCommandStringArray(hexString);
+        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+            return commands[9];
+        }
+        return null;
+    }
+
+    /**
+     * 解析出停止位
+     * <pre>
+     * 电表正常回应数据格式：
+     * 6837030092813968910833333433373333338C[16]"
+     *                                        /\
+     *                                        ||
+     *                                       停止位
+     * <pre/>
+     * @param hexString 16进制字符串
+     * @return
+     */
+    public static String getStopBit(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        String[] commands = HexConverter.getCommandStringArray(hexString);
+        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+            return commands[commands.length - 1];
+        }
+        return null;
+    }
+
+    /**
+     * 直接从接收到的16进制字符串中获得传输过来的校验和
+     * <pre>
+     * 电表正常回应数据格式：
+     * 683703009281396891083333343337333333[8C]16"
+     *                                      /\
+     *                                      ||
+     *                                     校验和
+     * <pre/>
+     * @param hexString 16进制字符串
+     * @return 校验和
+     */
+    public static String getCheckSumOfRecv(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        //解析出原始数据帧
+        String[] commands = HexConverter.getCommandStringArray(hexString);
+        return commands[commands.length - 2];
+    }
+
+    /**
+     * 计算接收到的数据的校验和
+     *
+     * @param hexString 16进制字符串
+     * @return
+     */
+    public static String checkSumOfRecv(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        //解析出原始数据帧
+        String[] commands = HexConverter.getCommandStringArray(hexString);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < commands.length - 2; i++) {
+            sb.append(commands[i]);
+        }
+        return checkSum(HexConverter.fillBlank(sb.toString()));
+    }
+
+
+    /**
      * 向客户端写数据
      *
-     * @param channel
-     * @param hexMsg
+     * @param channel 服务器和设备建立的通道
+     * @param hexMsg  命令信息
      */
     public static void writeMessage2Client(Channel channel, String hexMsg) {
         ByteBuf byteBuf = Unpooled.buffer();
@@ -148,10 +253,12 @@ public final class DLT645FrameUtils {
 
     public static void main(String[] args) {
 
+        System.out.println(getControlBit("68370300928139689108333333333A3333338E16"));
         //System.out.println(DLT645FrameUtils.getEleMeterId2AddressFiled("68 37 03 00 92 81 39 68 91 08 33 33 34 33 37 33 33 33 8C 16"));
-        DLT645FrameUtils.readData("398192000337", ElectricMeterReader.MasterRequestFrame.getControlCode(), "04", "33 33 34 33");
+        //DLT645FrameUtils.readData("398192000337", ElectricMeterReader.MasterRequestFrame.getControlCode(), "04", "33 33 34 33");
         //System.out.println(DLT645FrameUtils.checkSum("68 04 00 00 78 93 45 68 11 04 33 33 34 33"));
         /*"68 37 03 00 92 81 39 68 91 08 [33 33 34 33 | 37 33 33 33 ] 8C 16";
+        00 00 01 00                       DI0      DI3
         37-33=04;
         33-33=00;
         33-33=00;

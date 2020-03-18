@@ -8,7 +8,7 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 10:28
  */
-public enum ElectricMeterWriter {
+public enum AmmeterWriter {
     /**
      * 主站向从站请求设置数据(或编程)
      * 数据域长度：L =04H+04H（密码）+04H（操作者代码）+m(数据长度)
@@ -21,33 +21,29 @@ public enum ElectricMeterWriter {
      * 注	6：写数据时数据域的字节数 L≤200。
      * 注	7：对于安全模块参数文件中定义的参数按一类参数更新，其它参数按二类参数更新。
      */
-    MasterRequestFrame("14H"),
+    MasterRequestFrame("14"),
 
     /**
      * 从站响应数据
      * 数据域长度：L=00H
      */
-    SalveResponseFrame("94H"),
+    SalveResponseFrame("94"),
 
 
     /**
      * 从站异常应答
      * 数据长度：L=01H
      */
-    SlaveExceptionResponseFrame("D4H");
+    SlaveExceptionResponseFrame("D4");
 
 
-    private String ControlCode;
+    private final String ControlCode;
 
-    ElectricMeterWriter(String controlCode) {
+    AmmeterWriter(String controlCode) {
         ControlCode = controlCode;
     }
 
     public String getControlCode() {
         return ControlCode;
-    }
-
-    public void setControlCode(String controlCode) {
-        ControlCode = controlCode;
     }
 }

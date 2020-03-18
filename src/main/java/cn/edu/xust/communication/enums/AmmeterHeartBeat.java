@@ -8,7 +8,7 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 11:18
  */
-public enum ElectricMeterHeartBeat {
+public enum AmmeterHeartBeat {
 
     /**
      * 辅助电能表检测通信信道
@@ -20,19 +20,15 @@ public enum ElectricMeterHeartBeat {
      * 注1: 数据域TO表示下一帧心跳帧延时时间，范围6～90min，单位：分钟，默认30分钟。
      * 注2：心跳帧广播发送。
      */
-    MasterRequestFrame("1EH");
+    MasterRequestFrame("1E");
 
-    private String controlCode;
+    private final String controlCode;
 
-    ElectricMeterHeartBeat(String controlCode) {
+    AmmeterHeartBeat(String controlCode) {
         this.controlCode = controlCode;
     }
 
     public String getControlCode() {
         return controlCode;
-    }
-
-    public void setControlCode(String controlCode) {
-        this.controlCode = controlCode;
     }
 }

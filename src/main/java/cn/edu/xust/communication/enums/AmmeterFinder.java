@@ -8,7 +8,7 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 11:23
  */
-public enum ElectricMeterFinder {
+public enum AmmeterFinder {
 
     /**
      * 电能表寻卡相关操作
@@ -17,7 +17,7 @@ public enum ElectricMeterFinder {
      * 帧格式：
      * 68H	A0	…	A5	68H	09H	L	C0	…	C3	N1	…	Nm	CS	16H
      */
-    MasterRequestFrame("09H"),
+    MasterRequestFrame("09"),
 
     /**
      * 从站响应数据
@@ -25,7 +25,7 @@ public enum ElectricMeterFinder {
      * 帧格式：
      * 68H	A0	…	A5	68H	9CH	00	CS	16 H
      */
-    SalveResponseFrame("89H"),
+    SalveResponseFrame("89"),
 
 
     /**
@@ -34,19 +34,15 @@ public enum ElectricMeterFinder {
      * 帧格式：
      * 68H	A0	…	A5	68H	DCH	01	ERR	CS	16 H
      */
-    SlaveExceptionResponseFrame("C9H");
+    SlaveExceptionResponseFrame("C9");
 
-    private String controlCode;
+    private final String controlCode;
 
-    ElectricMeterFinder(String controlCode) {
+    AmmeterFinder(String controlCode) {
         this.controlCode = controlCode;
     }
 
     public String getControlCode() {
         return controlCode;
-    }
-
-    public void setControlCode(String controlCode) {
-        this.controlCode = controlCode;
     }
 }

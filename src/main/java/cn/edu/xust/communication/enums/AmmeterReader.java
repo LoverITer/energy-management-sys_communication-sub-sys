@@ -8,7 +8,7 @@ package cn.edu.xust.communication.enums;
  * @modified ：
  * @since ：2020/03/02 10:46
  */
-public enum ElectricMeterReader {
+public enum AmmeterReader {
 
     /**
      * 主站请求读电能表数据
@@ -58,10 +58,9 @@ public enum ElectricMeterReader {
 
     private final String controlCode;
 
-    private ElectricMeterReader(String controlCode) {
+    private AmmeterReader(String controlCode) {
         this.controlCode = controlCode;
     }
-
 
     public String getControlCode() {
         return controlCode;

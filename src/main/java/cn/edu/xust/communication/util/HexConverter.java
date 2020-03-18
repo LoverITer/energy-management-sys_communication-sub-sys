@@ -181,7 +181,7 @@ public final class HexConverter {
     }
 
     /**
-     * 自动以1字节分隔16进制字符串，比如：
+     * 以1字节分隔16进制字符串，比如：
      * <pre>
      *  "9ca525a6f035"=====>"9C A5 25 A6 F0 35"
      * <pre/>
@@ -198,14 +198,14 @@ public final class HexConverter {
         for (int i = 0; i < hexString.length() / 2; i++) {
             sb.append(hexString, i * 2, i * 2 + 2).append(" ");
         }
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     /**
-     * 帧结构对齐，比如：
+     * 帧结构高位填充，比如：
      * <pre>
-     * fill("7dd",4,'0')
-     * "7dd"====================> "07dd"
+     * fill("7dd",6,'0')
+     * "7dd"====================> "0007dd"
      * <pre/>
      *
      * @param input  需要补位的字符串
@@ -220,13 +220,36 @@ public final class HexConverter {
         return input;
     }
 
+    /**
+     * 帧结构对齐，高位补0
+     *
+     * @param hexString 需要补位的字符串
+     * @param symbol    按symol补充 如'0'
+     * @return 补齐后的字符串
+     */
+    public static String frameAligned(String hexString, char symbol) {
+        if (Objects.isNull(hexString)) {
+            return null;
+        }
+        if (hexString.length() % 2 != 0) {
+            hexString = fill(hexString, hexString.length() + 1, symbol);
+        }
+        return hexString;
+    }
+
+    /**
+     * 把一串16进制字符串转换为String数组
+     *
+     * @param hexString 16进制字符串
+     * @return String数组
+     */
+    public static String[] getCommandStringArray(String hexString) {
+        String readAbleCommand = HexConverter.fillBlank(hexString);
+        return Objects.requireNonNull(readAbleCommand).trim().split(" ");
+    }
 
     public static void main(String[] args) {
-        //System.out.println(Arrays.toString(hexString2ByteArray("68 37 03 00 92 81 39 68 11 04 33 33 34 33 38 16")));
-        //System.out.println(hexString2String("68 37 03 00 92 81 39 68 11 04 33 33 34 33 38 16"));
-
-        System.out.println(fillBlank("9ca525a6f035"));
-
-
+        System.out.println("start" + fillBlank("68AAAAAAAAAAAA68110433333333AD16") + "end");
     }
+
 }
