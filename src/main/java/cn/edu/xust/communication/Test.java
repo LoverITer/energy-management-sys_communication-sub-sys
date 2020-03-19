@@ -1,9 +1,7 @@
 package cn.edu.xust.communication;
 
-import cn.edu.xust.communication.protocol.DLT645Frame;
-import cn.edu.xust.communication.util.DLT645FrameUtils;
-
-import java.util.Objects;
+import cn.edu.xust.communication.protocol.Dlt645Frame;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 
 /**
  * Created by WuSong
@@ -14,17 +12,16 @@ public class Test {
 
     public static void main(String[] args) {
 
-        DLT645Frame dlt645Frame=new DLT645Frame();
+        Dlt645Frame dlt645Frame=new Dlt645Frame();
         String cmd="68370300928139689108333333333A3333338E16";
         try {
-            dlt645Frame.analysis(cmd);
+            Dlt645Frame frame = dlt645Frame.analysis(cmd);
+            System.out.println("------------------------------------");
+            System.out.println(frame.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        int dataLength=Integer.parseInt(Objects.requireNonNull(DLT645FrameUtils.getDataLength(cmd)));
-        int start=cmd.indexOf(DLT645FrameUtils.getControlBit(cmd)+DLT645FrameUtils.getDataLength(cmd))+4;
-        System.out.println("当前帧数据："+cmd.substring(start,start+dataLength*2));
-
+        System.out.println(Dlt645FrameUtils.getData(cmd));
     }
 }
 /*
@@ -45,6 +42,9 @@ public class Test {
 数据项名称： 当前正向有功总电能
 数据项内容:
 当前正向有功总电能: 000000.26 kWh
+
+*
+*
 原始报文：68 61 01 00 00 00 00 68 11 04 33 34 34 35 17 16
 地址域:  000000000161
 控制码C: 11

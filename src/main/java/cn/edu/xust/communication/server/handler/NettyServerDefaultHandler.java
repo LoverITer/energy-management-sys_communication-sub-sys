@@ -2,8 +2,8 @@ package cn.edu.xust.communication.server.handler;
 
 
 import cn.edu.xust.bean.ElectricMeter;
-import cn.edu.xust.communication.protocol.DLT645Frame;
-import cn.edu.xust.communication.util.DLT645FrameUtils;
+import cn.edu.xust.communication.protocol.Dlt645Frame;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.service.ElectricMeterService;
 import io.netty.buffer.ByteBuf;
@@ -68,7 +68,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             devices.put(remoteAddress, ctx.channel());
             log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Current connections " + devices.size());
             /**  建立连接后和设备进行首次通信确认身份*/
-            DLT645FrameUtils.writeMessage2Client(ctx.channel(), DLT645Frame.BROADCAST_FRAME);
+            Dlt645FrameUtils.writeMessage2Client(ctx.channel(), Dlt645Frame.BROADCAST_FRAME);
         }
     }
 
@@ -92,7 +92,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
             ElectricMeter ammeter = new ElectricMeter();
             //从响应数据中解析出设备的ID
-            String ammeterId = DLT645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
+            String ammeterId = Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
             ammeter.setElectricMeterId(ammeterId);
             ammeter.setElectricityIp(remoteAddress);
 

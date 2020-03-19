@@ -2,7 +2,7 @@ package cn.edu.xust.communication.server;
 
 import cn.edu.xust.communication.exception.NotFoundDeviceException;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
-import cn.edu.xust.communication.util.DLT645FrameUtils;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.service.ElectricMeterService;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -126,12 +126,12 @@ public class NettyServer implements NettyAsyncService,
             throw new NotFoundDeviceException();
         }
         if(Objects.isNull(cmd)){
-            throw new IllegalArgumentException("参数cmd不能为空");
+            throw new IllegalArgumentException("param cmd can not be null.");
         }
 
         Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
         if (Objects.nonNull(channel)) {
-            DLT645FrameUtils.writeMessage2Client(channel,cmd);
+            Dlt645FrameUtils.writeMessage2Client(channel,cmd);
         } else {
             throw new NotFoundDeviceException();
         }

@@ -1,6 +1,6 @@
 package cn.edu.xust.communication.util;
 
-import cn.edu.xust.communication.protocol.DLT645Frame;
+import cn.edu.xust.communication.protocol.Dlt645Frame;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -19,29 +19,9 @@ import java.util.Stack;
  * @since ：2020/03/04 12:33
  */
 @Slf4j
-public final class DLT645FrameUtils {
+public final class Dlt645FrameUtils {
 
-    private DLT645FrameUtils() {
-    }
-
-    /**
-     * 读取数据
-     *
-     * @param meterNumber        电表编号
-     * @param controlCode        控制码
-     * @param dataLength         数据长度
-     * @param dataIdentification 数据标识
-     */
-    public static void readData(String meterNumber, String controlCode, String dataLength, String dataIdentification) {
-        String addressField = getAddressFiled(meterNumber);
-        StringBuilder sb = new StringBuilder().append(DLT645Frame.FRAME_STARTER).append(" ")
-                .append(addressField).append(" ")
-                .append(DLT645Frame.FRAME_STARTER).append(" ")
-                .append(controlCode).append(" ")
-                .append(dataLength).append(" ")
-                .append(dataIdentification).append(" ");
-        DLT645Frame frame = new DLT645Frame(addressField, controlCode, dataLength, dataIdentification, checkSum(sb.toString()));
-        System.out.println(frame.toString());
+    private Dlt645FrameUtils() {
     }
 
 
@@ -82,7 +62,7 @@ public final class DLT645FrameUtils {
      * @return 电表的表号
      */
     public static String getAmmeterIdFromResponseFrame(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             throw new NullPointerException("Illegal frame , cannot be parsed!");
         }
         StringBuilder eleMeterId = new StringBuilder();
@@ -134,11 +114,11 @@ public final class DLT645FrameUtils {
      * @return 控制码
      */
     public static String getControlBit(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
             return commands[8];
         }
         return null;
@@ -157,11 +137,11 @@ public final class DLT645FrameUtils {
      * @return 数据域的长度
      */
     public static String getDataLength(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
             return commands[9];
         }
         return null;
@@ -180,11 +160,11 @@ public final class DLT645FrameUtils {
      * @return
      */
     public static String getStopBit(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= DLT645Frame.MIN_FRAME_LEN && commands.length <= DLT645Frame.MAX_FRAME_LEN) {
+        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
             return commands[commands.length - 1];
         }
         return null;
@@ -203,7 +183,7 @@ public final class DLT645FrameUtils {
      * @return 校验和
      */
     public static String getCheckSumOfRecv(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             return null;
         }
         //解析出原始数据帧
@@ -213,12 +193,11 @@ public final class DLT645FrameUtils {
 
     /**
      * 计算接收到的数据的校验和
-     *
      * @param hexString 16进制字符串
      * @return
      */
     public static String checkSumOfRecv(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < DLT645Frame.MIN_FRAME_LEN * 2 || hexString.length() > DLT645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
             return null;
         }
         //解析出原始数据帧
@@ -228,6 +207,25 @@ public final class DLT645FrameUtils {
             sb.append(commands[i]);
         }
         return checkSum(HexConverter.fillBlank(sb.toString()));
+    }
+
+    /**
+     * 获取帧结构中的数据
+     * <pre>
+     * 电表正常回应数据格式：
+     * 68370300928139689108[3333343337333333]8C16"
+     *                     |               |
+     * <pre/>
+     * @param hexString 16进制字符串
+     * @return
+     */
+    public static String getData(String hexString) {
+        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+            return null;
+        }
+        int dataLength = Integer.parseInt(Objects.requireNonNull(Dlt645FrameUtils.getDataLength(hexString)));
+        int start = hexString.indexOf(Dlt645FrameUtils.getControlBit(hexString) + Dlt645FrameUtils.getDataLength(hexString)) + 4;
+        return hexString.substring(start, start + dataLength * 2);
     }
 
 

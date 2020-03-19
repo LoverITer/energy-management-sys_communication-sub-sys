@@ -1,6 +1,6 @@
 package cn.edu.xust.communication.protocol;
 
-import cn.edu.xust.communication.util.DLT645FrameUtils;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 
 import java.io.*;
@@ -13,7 +13,7 @@ import java.util.*;
  * @modified ：
  * @since ：2020/03/04 13:10
  */
-public class DLT645Frame {
+public class Dlt645Frame {
 
     /**
      * DLT645协议帧最大字节数
@@ -69,7 +69,7 @@ public class DLT645Frame {
 
 
 
-    public DLT645Frame() {
+    public Dlt645Frame() {
     }
 
     public String getAddressField() {
@@ -112,7 +112,15 @@ public class DLT645Frame {
         this.checkSum = checkSum;
     }
 
-    public DLT645Frame(String addressField, String controlCode, String dataLength, String dataIdentification, String checkSum) {
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
+    }
+
+    public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification, String checkSum) {
         this.addressField = addressField;
         this.controlCode = controlCode;
         this.dataLength = dataLength;
@@ -120,10 +128,6 @@ public class DLT645Frame {
         this.checkSum = checkSum;
     }
 
-    @Override
-    public String toString() {
-        return FRAME_STARTER + " " + addressField + " " + FRAME_STARTER + " " + controlCode + " " + dataLength + " " + dataIdentification + " " + checkSum + " " + "16";
-    }
 
     /**
      * 解析DLT645-2007报文
@@ -133,8 +137,8 @@ public class DLT645Frame {
      * @param hexString 16进制字符串
      * @throws Exception
      */
-    public DLT645Frame analysis(String hexString) throws Exception {
-        DLT645Frame frame = new DLT645Frame();
+    public Dlt645Frame analysis(String hexString) throws Exception {
+        Dlt645Frame frame = new Dlt645Frame();
         String recvCommand = HexConverter.fillBlank(hexString);
         String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
         if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN || !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
@@ -143,12 +147,17 @@ public class DLT645Frame {
             System.out.println("您的输入：" + hexString);
             System.out.println("原始地址：" + Arrays.toString(commands));
             System.out.println("帧起始符：" + commands[0]);
-            System.out.println("电表地址：" + DLT645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
-            System.out.println("控制域：" + DLT645FrameUtils.getControlBit(hexString));
-            System.out.println("数据域长度：" + DLT645FrameUtils.getDataLength(hexString));
-            System.out.println("校验码：" + DLT645FrameUtils.checkSumOfRecv(hexString));
-            System.out.println("停止位：" + DLT645FrameUtils.getStopBit(hexString));
+            System.out.println("电表地址：" + Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
+            System.out.println("控制域：" + Dlt645FrameUtils.getControlBit(hexString));
+            System.out.println("数据域长度：" + Dlt645FrameUtils.getDataLength(hexString));
+            System.out.println("校验码：" + Dlt645FrameUtils.checkSumOfRecv(hexString));
+            System.out.println("停止位：" + Dlt645FrameUtils.getStopBit(hexString));
 
+            frame.setAddressField(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
+            frame.setControlCode(Dlt645FrameUtils.getControlBit(hexString));
+            frame.setDataLength(Dlt645FrameUtils.getDataLength(hexString));
+            frame.setCheckSum(Dlt645FrameUtils.checkSumOfRecv(hexString));
+            frame.setData(Dlt645FrameUtils.getData(hexString));
             //解析数据标识
             List<String> list2 = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
@@ -174,10 +183,11 @@ public class DLT645Frame {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            frame.setDataIdentification(dataIdentification.toString());
             System.out.println("数据项名称：" + properties.getProperty(dataIdentification.toString()));
             return frame;
-           /* //解析返回数据
-            if (commands.length > 16) {
+            //解析返回数据
+           /* if (commands.length > 16) {
                 int DTID0 = Integer.parseInt(DTID[0]);
                 int DTID1 = Integer.parseInt(DTID[1]);
                 List<String> list3 = new ArrayList();
@@ -186,7 +196,7 @@ public class DLT645Frame {
                 }
 
                 String[] data = list3.toArray(new String[list3.size()]);
-                long num = Long.parseLong((this.DataFormat(data)).toString());
+                long num = Long.parseLong((DataFormat(data)).toString());
                 BigDecimal bigDecimal = new BigDecimal(num);
                 if (DTID0 == 2 && DTID1 == 1 && !String.valueOf(DTID[2]).equals("FF")) {
                     //电压0.1v
@@ -230,4 +240,15 @@ public class DLT645Frame {
         return sbr;
     }
 
+    @Override
+    public String toString() {
+        return "Dlt645Frame{" +
+                "addressField='" + addressField + '\'' +
+                ", controlCode='" + controlCode + '\'' +
+                ", dataLength='" + dataLength + '\'' +
+                ", dataIdentification='" + dataIdentification + '\'' +
+                ", data='" + data + '\'' +
+                ", checkSum='" + checkSum + '\'' +
+                '}';
+    }
 }
