@@ -2,9 +2,11 @@ package cn.edu.xust.communication.server;
 
 import cn.edu.xust.communication.exception.NotFoundDeviceException;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
-import cn.edu.xust.communication.util.Dlt645FrameUtils;
+import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.service.ElectricMeterService;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -131,11 +133,30 @@ public class NettyServer implements NettyAsyncService,
 
         Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
         if (Objects.nonNull(channel)) {
-            Dlt645FrameUtils.writeMessage2Client(channel,cmd);
+            new NettyServer().writeMessage2Client(channel, cmd);
         } else {
             throw new NotFoundDeviceException();
         }
 
+    }
+
+    /**
+     * 向客户端写数据
+     *
+     * @param channel 服务器和设备建立的通道
+     * @param hexMsg  命令信息
+     */
+    private void writeMessage2Client(Channel channel, String hexMsg) {
+        ByteBuf byteBuf = Unpooled.buffer();
+        byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
+        channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
+            String remoteAddress = channel.remoteAddress().toString();
+            if (channelFuture.isSuccess()) {
+                System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
+            } else {
+                System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
+            }
+        });
     }
 
 }

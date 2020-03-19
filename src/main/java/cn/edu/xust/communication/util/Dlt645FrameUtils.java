@@ -1,10 +1,6 @@
 package cn.edu.xust.communication.util;
 
 import cn.edu.xust.communication.protocol.Dlt645Frame;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -226,26 +222,6 @@ public final class Dlt645FrameUtils {
         int dataLength = Integer.parseInt(Objects.requireNonNull(Dlt645FrameUtils.getDataLength(hexString)));
         int start = hexString.indexOf(Dlt645FrameUtils.getControlBit(hexString) + Dlt645FrameUtils.getDataLength(hexString)) + 4;
         return hexString.substring(start, start + dataLength * 2);
-    }
-
-
-    /**
-     * 向客户端写数据
-     *
-     * @param channel 服务器和设备建立的通道
-     * @param hexMsg  命令信息
-     */
-    public static void writeMessage2Client(Channel channel, String hexMsg) {
-        ByteBuf byteBuf = Unpooled.buffer();
-        byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
-        channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
-            String remoteAddress = channel.remoteAddress().toString();
-            if (channelFuture.isSuccess()) {
-                System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
-            } else {
-                System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
-            }
-        });
     }
 
 
