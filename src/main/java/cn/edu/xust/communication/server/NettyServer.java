@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -122,7 +123,7 @@ public class NettyServer implements NettyAsyncService,
      * @param deviceIp 设备ID
      * @param cmd      下发的命令
      */
-    public static void writeCommand(String deviceIp, String cmd) {
+    public static boolean writeCommand(String deviceIp, String cmd) {
         if (Objects.isNull(deviceIp) || Objects.isNull(NettyServerDefaultHandler.getDevicesMap())) {
             //没有找到对应的设备,抛出异常
             throw new NotFoundDeviceException();
@@ -130,10 +131,9 @@ public class NettyServer implements NettyAsyncService,
         if(Objects.isNull(cmd)){
             throw new IllegalArgumentException("param cmd can not be null.");
         }
-
         Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
         if (Objects.nonNull(channel)) {
-            new NettyServer().writeMessage2Client(channel, cmd);
+           return new NettyServer().writeMessage2Client(channel, cmd);
         } else {
             throw new NotFoundDeviceException();
         }
@@ -146,17 +146,20 @@ public class NettyServer implements NettyAsyncService,
      * @param channel 服务器和设备建立的通道
      * @param hexMsg  命令信息
      */
-    private void writeMessage2Client(Channel channel, String hexMsg) {
+    private boolean writeMessage2Client(Channel channel, String hexMsg) {
         ByteBuf byteBuf = Unpooled.buffer();
+        AtomicBoolean isSuccess= new AtomicBoolean(false);
         byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
         channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
             String remoteAddress = channel.remoteAddress().toString();
             if (channelFuture.isSuccess()) {
+                isSuccess.set(true);
                 System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
             } else {
                 System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
             }
         });
+        return isSuccess.get();
     }
 
 }

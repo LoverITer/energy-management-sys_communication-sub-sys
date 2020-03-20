@@ -27,7 +27,7 @@ public enum AmmeterReader {
      * 帧格式4（液晶查看命令）：
      * 68H	A0	…	A5	68H	11H	L	DI0	…	DI3	N1	…	Nm	CS	16H
      */
-    MasterRequestFrame("11"),
+    MasterRequestFrame("11", "04"),
 
     /**
      * 从站响应数据
@@ -37,7 +37,7 @@ public enum AmmeterReader {
      *                                           ╲    ╱
      *                                             数据
      */
-    SalveResponseFrame("91"),
+    SalveResponseFrame("91", "04"),
 
     /**
      * 从站响应数据
@@ -47,23 +47,29 @@ public enum AmmeterReader {
      *                                           ╲    ╱
      *                                             数据
      */
-    SalveResponseFrameWithMore("B1"),
+    SalveResponseFrameWithMore("B1", "04"),
 
     /**
      * 从站异常应答
      * 数据长度：L=01H
      */
-    SlaveExceptionResponseFrame("D1");
+    SlaveExceptionResponseFrame("D1", "04");
 
 
     private final String controlCode;
+    
+    private final String baseDataLen;
 
-    private AmmeterReader(String controlCode) {
+    private AmmeterReader(String controlCode, String baseDataLen) {
         this.controlCode = controlCode;
+        this.baseDataLen = baseDataLen;
     }
 
     public String getControlCode() {
         return controlCode;
     }
 
+    public String getBaseDataLen() {
+        return baseDataLen;
+    }
 }

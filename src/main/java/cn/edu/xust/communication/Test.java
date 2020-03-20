@@ -1,7 +1,7 @@
 package cn.edu.xust.communication;
 
+import cn.edu.xust.communication.enums.AmmeterReader;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
-import cn.edu.xust.communication.util.Dlt645FrameUtils;
 
 /**
  * Created by WuSong
@@ -12,16 +12,17 @@ public class Test {
 
     public static void main(String[] args) {
 
-        Dlt645Frame dlt645Frame=new Dlt645Frame();
-        String cmd="68370300928139689108333333333A3333338E16";
-        try {
-            Dlt645Frame frame = dlt645Frame.analysis(cmd);
+        Dlt645Frame frame=new Dlt645Frame("398192000337", AmmeterReader.MasterRequestFrame.getControlCode(),"04","33 33 34 33");
+        //String responseCmd="68370300928139689108333333333A3333338E16";
+        System.out.println(frame.createFrame());
+        /*try {
+            frame.analysis(cmd);
             System.out.println("------------------------------------");
             System.out.println(frame.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println(Dlt645FrameUtils.getData(cmd));
+        System.out.println(Dlt645FrameUtils.getData(cmd));*/
     }
 }
 /*
