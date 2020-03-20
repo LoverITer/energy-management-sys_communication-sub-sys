@@ -8,67 +8,67 @@ package cn.edu.xust.communication;
 public abstract class AbstractAmmeterReaderWriterAdapter implements AmmeterReaderWriter {
 
     @Override
-    public String readCurrentVA() {
-        return null;
+    public void readCurrentVA() {
+       
     }
 
     @Override
-    public String readCurrentVB() {
-        return null;
+    public void readCurrentVB() {
+       
     }
 
     @Override
-    public String readCurrentVC() {
-        return null;
+    public void readCurrentVC() {
+       
     }
 
     @Override
-    public String readCurrentIA() {
-        return null;
+    public void readCurrentIA() {
+       
     }
 
     @Override
-    public String readCurrentIB() {
-        return null;
+    public void readCurrentIB() {
+       
     }
 
     @Override
-    public String readCurrentIC() {
-        return null;
+    public void readCurrentIC() {
+       
     }
 
     @Override
-    public String readCurrentActivePower() {
-        return null;
+    public void readCurrentActivePower() {
+       
     }
 
     @Override
-    public String readCurrentReactivePower() {
-        return null;
+    public void readCurrentReactivePower() {
+       
     }
 
     @Override
-    public String readCurrentPowerFactor() {
-        return null;
+    public void readCurrentPowerFactor() {
+       
     }
 
     @Override
-    public String readCurrentTotalApparentPower() {
-        return null;
+    public void readCurrentTotalApparentPower() {
+       
     }
 
     @Override
-    public String readCurrentTotalActiveEnergy() {
-        return null;
+    public void readCurrentTotalActiveEnergy() {
+       
     }
 
     @Override
-    public String readCurrentPositiveActiveEnergy() {
-        return null;
+    public void readCurrentPositiveActiveEnergy() {
+       
     }
 
     @Override
-    public String readCurrentNegativeActiveEnergy() {
-        return null;
+    public void readCurrentNegativeActiveEnergy() {
+       
     }
 }

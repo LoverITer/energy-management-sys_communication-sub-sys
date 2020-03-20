@@ -1,5 +1,7 @@
 package cn.edu.xust.communication;
 
+import cn.edu.xust.communication.enums.AmmeterReader;
+import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.NettyServer;
 
 import java.lang.reflect.InvocationTargetException;
@@ -21,88 +23,93 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
     /**
      * 电表编号
      */
-    private String ammeterID;
+    private String ammeterId;
 
-    public Dlt6452007AmmeterReader(String ammeterChannelIp, String ammeterID) {
+    public Dlt6452007AmmeterReader(String ammeterChannelIp, String ammeterId) {
         this.ammeterChannelIp = ammeterChannelIp;
-        this.ammeterID = ammeterID;
+        this.ammeterId = ammeterId;
     }
 
     @Override
-    public String readCurrentVA() {
-        return null;
+    public void readCurrentVA() {
+       
     }
 
     @Override
-    public String readCurrentVB() {
-        return null;
+    public void readCurrentVB() {
+       
     }
 
     @Override
-    public String readCurrentVC() {
-        return null;
+    public void readCurrentVC() {
+       
     }
 
     @Override
-    public String readCurrentIA() {
-        return null;
+    public void readCurrentIA() {
+       
     }
 
     @Override
-    public String readCurrentIB() {
-        return null;
+    public void readCurrentIB() {
+       
     }
 
     @Override
-    public String readCurrentIC() {
-        return null;
+    public void readCurrentIC() {
+       
     }
 
     @Override
-    public String readCurrentActivePower() {
-        return null;
+    public void readCurrentActivePower() {
+       
     }
 
     @Override
-    public String readCurrentReactivePower() {
-        return null;
+    public void readCurrentReactivePower() {
+       
     }
 
     @Override
-    public String readCurrentPowerFactor() {
-        return null;
+    public void readCurrentPowerFactor() {
+       
     }
 
     @Override
-    public String readCurrentTotalApparentPower() {
-        return null;
+    public void readCurrentTotalApparentPower() {
+       
     }
 
     @Override
-    public String readCurrentTotalActiveEnergy() {
-        String cmd = "";
-        NettyServer.writeCommand(ammeterChannelIp, cmd);
-        return null;
+    public void readCurrentTotalActiveEnergy() {
+        Dlt645Frame frame = new Dlt645Frame(ammeterId, AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 34 33");
+        NettyServer.writeCommand(ammeterChannelIp, frame.createFrame());
     }
 
     @Override
-    public String readCurrentPositiveActiveEnergy() {
-        return null;
+    public void readCurrentPositiveActiveEnergy() {
+       
     }
 
     @Override
-    public String readCurrentNegativeActiveEnergy() {
-        return null;
+    public void readCurrentNegativeActiveEnergy() {
+       
     }
 
+    /**
+     * 自动调用所有采集方法
+     */
     public void start() {
         try {
-            Class clazz = this.getClass();
+            Class<? extends Dlt6452007AmmeterReader> clazz = this.getClass();
             Method[] methods = clazz.getMethods();
             for (Method method : methods) {
-                method.invoke(clazz.getDeclaredConstructor().newInstance());
+                if(!"start".equalsIgnoreCase(method.getName())&&method.getName().startsWith("read")) {
+                    method.invoke(this);
+                }
             }
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
         }
     }

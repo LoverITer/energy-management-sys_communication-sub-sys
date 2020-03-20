@@ -72,6 +72,22 @@ public class Dlt645Frame {
     public Dlt645Frame() {
     }
 
+    public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification) {
+        this.addressField = addressField;
+        this.controlCode = controlCode;
+        this.dataLength = dataLength;
+        this.dataIdentification = dataIdentification;
+    }
+
+    public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification, String data, String checkSum) {
+        this.addressField = addressField;
+        this.controlCode = controlCode;
+        this.dataLength = dataLength;
+        this.dataIdentification = dataIdentification;
+        this.checkSum = checkSum;
+        this.data = data;
+    }
+
     public String getAddressField() {
         return addressField;
     }
@@ -120,14 +136,26 @@ public class Dlt645Frame {
         this.data = data;
     }
 
-    public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification, String checkSum) {
-        this.addressField = addressField;
-        this.controlCode = controlCode;
-        this.dataLength = dataLength;
-        this.dataIdentification = dataIdentification;
-        this.checkSum = checkSum;
+
+    /**
+     * 拼接读取命令报文
+     */
+    public String createFrame(){
+        return this.toString();
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        //帧数据前半部分（校验码由此部分数据计算得出）
+        sb.append(Dlt645Frame.FRAME_STARTER).append(" ")
+                .append(Dlt645FrameUtils.getAddressFiled(this.addressField))
+                .append(Dlt645Frame.FRAME_STARTER).append(" ")
+                .append(this.controlCode).append(" ")
+                .append(this.dataLength).append(" ")
+                .append(this.dataIdentification);
+        return sb.append(" ").append(Dlt645FrameUtils.checkSum(sb.toString())).append(" ").append(Dlt645Frame.FRAME_END).toString();
+    }
 
     /**
      * 解析DLT645-2007报文
@@ -142,9 +170,8 @@ public class Dlt645Frame {
         String recvCommand = HexConverter.fillBlank(hexString);
         String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
         if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN || !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
-            throw new IllegalArgumentException("Illegal frame cannot be parsed!");
+            return null;
         } else {
-            System.out.println("您的输入：" + hexString);
             System.out.println("原始地址：" + Arrays.toString(commands));
             System.out.println("帧起始符：" + commands[0]);
             System.out.println("电表地址：" + Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
@@ -240,15 +267,4 @@ public class Dlt645Frame {
         return sbr;
     }
 
-    @Override
-    public String toString() {
-        return "Dlt645Frame{" +
-                "addressField='" + addressField + '\'' +
-                ", controlCode='" + controlCode + '\'' +
-                ", dataLength='" + dataLength + '\'' +
-                ", dataIdentification='" + dataIdentification + '\'' +
-                ", data='" + data + '\'' +
-                ", checkSum='" + checkSum + '\'' +
-                '}';
-    }
 }

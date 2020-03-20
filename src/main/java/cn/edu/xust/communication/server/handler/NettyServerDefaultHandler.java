@@ -2,10 +2,9 @@ package cn.edu.xust.communication.server.handler;
 
 
 import cn.edu.xust.bean.ElectricMeter;
-import cn.edu.xust.communication.Dlt6452007AmmeterReader;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
+import cn.edu.xust.communication.server.HashedWheelReader;
 import cn.edu.xust.communication.server.NettyServer;
-import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.service.ElectricMeterService;
 import io.netty.buffer.ByteBuf;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Netty服务端业务处理handler，用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
@@ -71,7 +69,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
         String remoteAddress = socketChannel.remoteAddress().toString();
         if (!devices.containsKey(remoteAddress)) {
             devices.put(remoteAddress, ctx.channel());
-            log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Current connections " + devices.size());
+            log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + devices.size());
             NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME);
         }
     }
@@ -92,28 +90,19 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             //复制内容到字节数组
             buffer.readBytes(bytes);
             String hexString = HexConverter.receiveHexToString(bytes);
-            System.out.println("hexString:" + hexString);
-            System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
             ElectricMeter ammeter = new ElectricMeter();
-            //从响应数据中解析出设备的ID
-            String ammeterId = Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
-            ammeter.setElectricMeterId(ammeterId);
-            ammeter.setElectricityIp(remoteAddress);
-            if (sechdelTaskLunch) {
-                sechdelTaskLunch = false;
-                //15分钟自动执行一次采集操作
-                ctx.channel().eventLoop().schedule(() -> {
-                    Dlt6452007AmmeterReader reader = new Dlt6452007AmmeterReader(remoteAddress, ammeterId);
-                    //解析数据
-                    reader.start();
-                }, 15, TimeUnit.MINUTES);
-            }
-            ammeters.put(remoteAddress, ammeter);
-            //及时更新数据库中对应表的消息
-            int ret = electricMeterServiceImpl.updateByElectricMeterIdSelective(ammeter);
-            if (ret == 0) {
-                //尝试更新发现在数据库没有该设别的记录时，新增一个设备
-                electricMeterServiceImpl.add(ammeter);
+            //解析帧结构
+            System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
+            Dlt645Frame dlt645Frame = new Dlt645Frame().analysis(hexString);
+            if(dlt645Frame!=null) {
+                ammeter.setElectricMeterId(dlt645Frame.getAddressField());
+                ammeter.setElectricityIp(remoteAddress);
+                if (sechdelTaskLunch) {
+                    //15分钟自动执行一次采集操作
+                    new HashedWheelReader().executePer5Min(remoteAddress, dlt645Frame.getAddressField());
+                    sechdelTaskLunch = false;
+                }
+                ammeters.put(remoteAddress, ammeter);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
