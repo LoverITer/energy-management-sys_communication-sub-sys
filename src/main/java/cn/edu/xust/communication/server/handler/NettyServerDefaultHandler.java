@@ -2,7 +2,9 @@ package cn.edu.xust.communication.server.handler;
 
 
 import cn.edu.xust.bean.ElectricMeter;
+import cn.edu.xust.communication.Dlt6452007AmmeterReader;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
+import cn.edu.xust.communication.server.NettyServer;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.service.ElectricMeterService;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Netty服务端业务处理handler，用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
@@ -32,6 +35,8 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
     @Autowired
     private ElectricMeterService electricMeterServiceImpl;
+
+    private boolean sechdelTaskLunch = true;
 
     /**
      * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
@@ -67,8 +72,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
         if (!devices.containsKey(remoteAddress)) {
             devices.put(remoteAddress, ctx.channel());
             log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Current connections " + devices.size());
-            /**  建立连接后和设备进行首次通信确认身份*/
-            Dlt645FrameUtils.writeMessage2Client(ctx.channel(), Dlt645Frame.BROADCAST_FRAME);
+            NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME);
         }
     }
 
@@ -95,7 +99,15 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             String ammeterId = Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
             ammeter.setElectricMeterId(ammeterId);
             ammeter.setElectricityIp(remoteAddress);
-
+            if (sechdelTaskLunch) {
+                sechdelTaskLunch = false;
+                //15分钟自动执行一次采集操作
+                ctx.channel().eventLoop().schedule(() -> {
+                    Dlt6452007AmmeterReader reader = new Dlt6452007AmmeterReader(remoteAddress, ammeterId);
+                    //解析数据
+                    reader.start();
+                }, 15, TimeUnit.MINUTES);
+            }
             ammeters.put(remoteAddress, ammeter);
             //及时更新数据库中对应表的消息
             int ret = electricMeterServiceImpl.updateByElectricMeterIdSelective(ammeter);

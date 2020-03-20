@@ -11,107 +11,101 @@ public interface AmmeterReaderWriter {
 
     /**
      * 当前A相电压
-     *
-     * @param hexString 十六进制字符串
      * @return A相电压（V）
      */
-    String readCurrentVA(String hexString);
+    String readCurrentVA();
 
     /**
      * 当前B相电压
-     *
-     * @param hexString 十六进制字符串
      * @return B相电压（V）
      */
-    String readCurrentVB(String hexString);
+    String readCurrentVB();
 
     /**
      * 当前C相电压
-     *
-     * @param hexString 十六进制字符串
      * @return C相电压（V）
      */
-    String readCurrentVC(String hexString);
+    String readCurrentVC();
 
     /**
      * 当前A相电流
      *
-     * @param hexString 十六进制字符串
+     *
      * @return A相电流（A）
      */
-    String readCurrentIA(String hexString);
+    String readCurrentIA();
 
     /**
      * 当前B相电压
      *
-     * @param hexString 十六进制字符串
+     *
      * @return B相电流（A）
      */
-    String readCurrentIB(String hexString);
+    String readCurrentIB();
 
     /**
      * 当前C相电压
      *
-     * @param hexString 十六进制字符串
+     *
      * @return C相电流（A）
      */
-    String readCurrentIC(String hexString);
+    String readCurrentIC();
 
     /**
      * 当前总有功功率
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 总有功功率(W)
      */
-    String readCurrentActivePower(String hexString);
+    String readCurrentActivePower();
 
     /**
      * 当前总无用功率
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 总有功功率(Var)
      */
-    String readCurrentReactivePower(String hexString);
+    String readCurrentReactivePower();
 
     /**
      * 当前总功率因数
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 总功率因数
      */
-    String readCurrentPowerFactor(String hexString);
+    String readCurrentPowerFactor();
 
     /**
      * 当前总视在功率
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 当前总视在功率（Var）
      */
-    String readCurrentTotalApparentPower(String hexString);
+    String readCurrentTotalApparentPower();
 
     /**
      * 读取当前电表总有功电能
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 总有功电能（KWh）
      */
-    String readCurrentTotalActiveEnergy(String hexString);
+    String readCurrentTotalActiveEnergy();
 
     /**
      * 读取当前电表正向有功电能
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 正向有功电能（KWh）
      */
-    String readCurrentPositiveActiveEnergy(String hexString);
+    String readCurrentPositiveActiveEnergy();
 
 
     /**
      * 读取当前电表正向有功电能
      *
-     * @param hexString 十六进制字符串
+     *
      * @return 正向有功电能（KWh）
      */
-    String readCurrentNegativeActiveEnergy(String hexString);
+    String readCurrentNegativeActiveEnergy();
 
 }
