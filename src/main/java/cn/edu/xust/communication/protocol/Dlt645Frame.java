@@ -211,7 +211,7 @@ public class Dlt645Frame {
                 e.printStackTrace();
             }
             frame.setDataIdentification(dataIdentification.toString());
-            System.out.println("数据项名称：" + properties.getProperty(dataIdentification.toString()));
+            System.out.println("数据项名称：" + properties.getProperty(dataIdentification.toString())+"\n");
             return frame;
             //解析返回数据
            /* if (commands.length > 16) {
