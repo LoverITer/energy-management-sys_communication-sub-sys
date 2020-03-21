@@ -10,9 +10,9 @@ package cn.edu.xust.communication.enums;
  */
 public enum AmmeterReader {
 
-    /**
-     * 主站请求读电能表数据
+    /**主站请求读电能表数据<br/>
      * 数据域长度：L=04H+m(数据长度)
+     * <pre>
      * 帧格式1（m=0）：
      * 68H	A0	…	A5	68H	11H	04H	      DI0	…	DI3	CS	16H
      *        ╲   ╱          ╲   ╲         ╲       ╱
@@ -26,6 +26,7 @@ public enum AmmeterReader {
      *                                                     分   时  日   月   年
      * 帧格式4（液晶查看命令）：
      * 68H	A0	…	A5	68H	11H	L	DI0	…	DI3	N1	…	Nm	CS	16H
+     * </pre>
      */
     MasterRequestFrame("11", "04"),
 
@@ -53,7 +54,7 @@ public enum AmmeterReader {
      * 从站异常应答
      * 数据长度：L=01H
      */
-    SlaveExceptionResponseFrame("D1", "04");
+    SlaveExceptionResponseFrame("D1", "01");
 
 
     private final String controlCode;

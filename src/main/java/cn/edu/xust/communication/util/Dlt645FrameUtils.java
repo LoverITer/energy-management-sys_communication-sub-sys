@@ -65,12 +65,12 @@ public final class Dlt645FrameUtils {
         String responseFrame = HexConverter.fillBlank(hexString);
         String[] messageArray = Objects.requireNonNull(responseFrame).split(" ");
         Stack<String> stack = new Stack<>();
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= Dlt645Frame.ADDRESS_FIELD_LEN; i++) {
             stack.push(messageArray[i]);
         }
         while (!stack.isEmpty()) {
-            String bit = stack.pop();
-            eleMeterId.append(bit);
+            String byteStr = stack.pop();
+            eleMeterId.append(byteStr);
         }
         return eleMeterId.toString();
     }

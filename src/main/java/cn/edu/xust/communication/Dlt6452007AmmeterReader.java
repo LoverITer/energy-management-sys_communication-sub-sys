@@ -33,68 +33,81 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
 
     @Override
     public void readCurrentVA() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 34 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 34 35");
     }
 
     @Override
     public void readCurrentVB() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 34 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 34 35");
     }
 
     @Override
     public void readCurrentVC() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 34 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 34 35");
     }
 
     @Override
     public void readCurrentIA() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 35 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 35 35");
     }
 
     @Override
     public void readCurrentIB() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 35 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 35 35");
     }
 
     @Override
     public void readCurrentIC() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 35 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 35 35");
     }
 
     @Override
     public void readCurrentActivePower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 36 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 36 35");
     }
 
     @Override
     public void readCurrentPowerFactor() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 39 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 39 35");
     }
 
     @Override
     public void readCurrentTotalApparentPower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 38 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 38 35");
     }
 
     @Override
     public void readCurrentReactivePower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 37 35");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 37 35");
     }
 
 
     @Override
     public void readCurrentTotalActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 33 33");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 33 33");
     }
 
     @Override
     public void readCurrentPositiveActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 34 33");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 34 33");
     }
 
     @Override
     public void readCurrentNegativeActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(), AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 35 33");
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 35 33");
     }
 
     /**
@@ -112,7 +125,7 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
         try {
             Dlt645Frame frame = new Dlt645Frame(ammeterId, controlCode, dataLen, dataIdentification);
             NettyServer.writeCommand(ammeterChannelIp, frame.createFrame());
-            //阻塞线程，等待设备的响应。不要删除！不然回因为服务器发送指令速度太快而设备处理不过来
+            //阻塞线程，等待设备的响应。不要删除！不然会因为服务器发送指令速度太快而设备处理不过来
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();

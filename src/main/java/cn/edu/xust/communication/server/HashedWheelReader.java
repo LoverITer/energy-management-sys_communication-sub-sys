@@ -90,7 +90,7 @@ public class HashedWheelReader {
     private void executeScheduleTask(long time, TimeUnit timeUnit, String remoteAddress, String addressField) {
         TimerTask task = new TimerTask() {
             @Override
-            public void run(Timeout timeout) throws Exception {
+            public void run(Timeout timeout) {
                 Dlt6452007AmmeterReader reader = new Dlt6452007AmmeterReader(remoteAddress, addressField);
                 //解析数据
                 reader.start();

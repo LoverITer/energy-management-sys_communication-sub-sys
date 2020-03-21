@@ -104,7 +104,7 @@ public interface AmmeterReaderWriter {
      * 读取当前电表正向有功电能
      *
      *
-     * @return 正向有功电能（KWh）
+     * @return 反向有功电能（KWh）
      */
     void readCurrentNegativeActiveEnergy();
 
