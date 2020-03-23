@@ -11,7 +11,7 @@
     <groupId>cn.edu.xust</groupId>
     <artifactId>energy_management_sys</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>energy_management_sys</name>
     <description>Demo project for Spring Boot</description>
 
@@ -41,12 +41,6 @@
             <artifactId>druid-spring-boot-starter</artifactId>
             <version>1.1.10</version>
         </dependency>
-        <!--sharding-jdbc-->
-        <!--<dependency>
-            <groupId>io.shardingsphere</groupId>
-            <artifactId>sharding-jdbc-spring-boot-starter</artifactId>
-            <version>3.1.0.M1</version>
-        </dependency>-->
         <!-- Netty依赖 -->
         <dependency>
             <groupId>io.netty</groupId>

@@ -74,6 +74,12 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
     }
 
     @Override
+    public void readCurrentReactivePower() {
+        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 37 35");
+    }
+
+    @Override
     public void readCurrentPowerFactor() {
         this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 39 35");
@@ -83,12 +89,6 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
     public void readCurrentTotalApparentPower() {
         this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 38 35");
-    }
-
-    @Override
-    public void readCurrentReactivePower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
-                AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 37 35");
     }
 
 

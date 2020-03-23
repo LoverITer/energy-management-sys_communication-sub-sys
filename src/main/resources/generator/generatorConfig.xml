@@ -5,7 +5,7 @@
 
 <generatorConfiguration>
     <!--mysql 连接数据库jar 这里选择自己本地位置-->
-    <classPathEntry location="C:\Java\mysql-connector-java-8.0.11\mysql-connector-java-8.0.11.jar" />
+    <classPathEntry location="C:\maven\Repository\mysql\mysql-connector-java\8.0.11\mysql-connector-java-8.0.11.jar" />
     <context id="testTables" targetRuntime="MyBatis3">
         <commentGenerator>
             <!-- 是否去除自动生成的注释 true：是 ： false:否 -->
@@ -13,9 +13,9 @@
         </commentGenerator>
         <!--数据库连接的信息：驱动类、连接地址、用户名、密码 -->
         <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
-                        connectionURL="jdbc:mysql://192.168.92.128:3306/energy_management_sys?useSSL=false"
+                        connectionURL="jdbc:mysql://118.178.126.209:3306/electric?useSSL=false"
                         userId="root"
-                        password="123456">
+                        password="Rzl123456">
         </jdbcConnection>
         <!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，为 true时把JDBC DECIMAL 和
            NUMERIC 类型解析为java.math.BigDecimal -->
@@ -48,7 +48,7 @@
             <property name="enableSubPackages" value="false" />
         </javaClientGenerator>
         <!-- 指定数据库表 ，设置是否要生成Exemple方法-->
-        <table tableName="electric_meter" schema=""
+        <table tableName="ammeter_parameter" schema=""
                enableCountByExample="false"
                enableDeleteByExample="false"
                enableUpdateByExample="false"

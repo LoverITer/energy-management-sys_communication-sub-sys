@@ -1,7 +1,11 @@
 package cn.edu.xust.communication.protocol;
 
+import cn.edu.xust.bean.AmmeterParameter;
+import cn.edu.xust.communication.config.ApplicationContextHolder;
+import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
+import cn.edu.xust.mapper.AmmeterParameterMapper;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -55,9 +59,8 @@ public class Dlt645Frame {
     /**校验码*/
     private String checkSum;
 
-
-
     public Dlt645Frame() {
+
     }
 
     public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification) {
@@ -173,6 +176,10 @@ public class Dlt645Frame {
             frame.setDataLength(Dlt645FrameUtils.getDataLength(hexString));
             frame.setCheckSum(Dlt645FrameUtils.checkSumOfRecv(hexString));
             frame.setData(Dlt645FrameUtils.getData(hexString));
+
+            AmmeterParameter ammeterParameter = new AmmeterParameter();
+            ammeterParameter.setAcqTime(new Date());
+            ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
             //解析数据标识
             List<String> list2 = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
@@ -222,34 +229,85 @@ public class Dlt645Frame {
                         || (DTID0 == 0 && DTID1 == 6) || (DTID0 == 0 && DTID1 == 7) || (DTID0 == 0 && DTID1 == 8);
                 boolean isVoltageDataBlock=DTID0 == 2 && DTID1 == 1 && "FF".equals(String.valueOf(DTID[2]));
                 if (isVoltage) {
-                    //电压0.1v
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.1")) + "v");
+                    double voltage = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.1"))));
+                    if ("02010100".contentEquals(dataIdentification.toString())) {
+                        //A相电压
+                        ammeterParameter.setCurrentAVoltage(voltage);
+                    } else if ("02010200".contentEquals(dataIdentification.toString())) {
+                        //B相电压
+                        ammeterParameter.setCurrentBVoltage(voltage);
+                    } else if ("02010300".contentEquals(dataIdentification.toString())) {
+                        //B相电压
+                        ammeterParameter.setCurrentCVoltage(voltage);
+                    }
                 } else if (isCurrent) {
-                    //电流0.001A
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")) + "A");
+                    double current = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
+                    if ("02020100".contentEquals(dataIdentification.toString())) {
+                        //A相电流
+                        ammeterParameter.setCurrentACurrent(current);
+                    } else if ("02020200".contentEquals(dataIdentification.toString())) {
+                        //B相电流
+                        ammeterParameter.setCurrentBCurrent(current);
+                    } else if ("02020300".contentEquals(dataIdentification.toString())) {
+                        //B相电流
+                        ammeterParameter.setCurrentCCurrent(current);
+                    }
                 } else if (isReactivePower) {
-                    //有无功功率0.0001
+                    //有/无功功率0.0001
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.0001")));
+                    double power = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.0001"))));
+                    if ("02030000".equals(dataIdentification.toString())) {
+                        //有功功率
+                        ammeterParameter.setCurrentActivePower(power);
+                    } else if ("02040000".equals(dataIdentification.toString())) {
+                        //无功功率
+                        ammeterParameter.setCurrentReactivePower(power);
+                    }
                 } else if (isPowerFactor) {
                     //功率因数0.001
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")));
+                    double currentPowerFactor = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
+                    ammeterParameter.setCurrentPowerFactor(currentPowerFactor);
                 } else if (isEnergy) {
-                    //有无功总电能、四象限无功总电能0.01
+                    //有/无功总电能、四象限无功总电能0.01
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.01")));
+                    double enery = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.01"))));
+                    if ("00000000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentTotalActivePower(enery);
+                    } else if ("00010000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentPositiveActivePower(enery);
+                    } else if ("00020000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentNegtiveActivePower(enery);
+                    }
                 } else if (isVoltageDataBlock) {
                     //电压数据块
-                    System.out.println(num);
+                   /* System.out.println(num);
                     System.out.println(String.valueOf(num).substring(0, 4));
                     System.out.println(String.valueOf(num).substring(4, 8));
                     System.out.println(String.valueOf(num).substring(8));
-                    System.out.println("C相电压" + new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")));
+                    BigDecimal bigDecimal1 = new BigDecimal(String.valueOf(num).substring(0, 4));
+                    System.out.println("C相电压" + bigDecimal1.multiply(new BigDecimal("0.1")));
                     System.out.println("B相电压" + new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")));
-                    System.out.println("A相电压" + new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")));
+                    System.out.println("A相电压" + new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")));*/
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")))));
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")))));
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")))));
                 } else {
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + num);
                 }
             }
             System.out.println();
+            ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.OK.getMessage());
+            Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+            if(mapper instanceof AmmeterParameterMapper) {
+                AmmeterParameterMapper ammeterParamMapper=(AmmeterParameterMapper)mapper;
+                int ret = ammeterParamMapper.updateSelective(ammeterParameter);
+                if (ret <= 0) {
+                    ammeterParamMapper.insertSelective(ammeterParameter);
+                }
+            }
             return frame;
         }
     }
