@@ -27,7 +27,7 @@ public class Dlt645Frame {
     /**
      * DLT645协议帧最小字节数
      */
-    public static final int MIN_FRAME_LEN = 16;
+    public static final int MIN_FRAME_LEN = 13;
 
     /**帧结构中地址域的字节数*/
     public static final int ADDRESS_FIELD_LEN=6;
@@ -159,6 +159,8 @@ public class Dlt645Frame {
     public Dlt645Frame analysis(String hexString) throws Exception {
         Dlt645Frame frame = new Dlt645Frame();
         String recvCommand = HexConverter.fillBlank(hexString);
+        //电表读取命令中返回01 控制码是错误响应    6837030092813968 D1 01 35 5D 16
+        //                                      6837030092813968 91 07 33 33 36 35 33 33 33 58 16
         String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
         if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN || !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
             return null;
@@ -283,14 +285,6 @@ public class Dlt645Frame {
                     }
                 } else if (isVoltageDataBlock) {
                     //电压数据块
-                   /* System.out.println(num);
-                    System.out.println(String.valueOf(num).substring(0, 4));
-                    System.out.println(String.valueOf(num).substring(4, 8));
-                    System.out.println(String.valueOf(num).substring(8));
-                    BigDecimal bigDecimal1 = new BigDecimal(String.valueOf(num).substring(0, 4));
-                    System.out.println("C相电压" + bigDecimal1.multiply(new BigDecimal("0.1")));
-                    System.out.println("B相电压" + new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")));
-                    System.out.println("A相电压" + new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")));*/
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")))));
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")))));
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")))));
@@ -298,7 +292,6 @@ public class Dlt645Frame {
                     System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + num);
                 }
             }
-            System.out.println();
             ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.OK.getMessage());
             Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
             if(mapper instanceof AmmeterParameterMapper) {

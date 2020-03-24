@@ -1,10 +1,14 @@
 package cn.edu.xust.communication.server.handler;
 
 
+import cn.edu.xust.bean.AmmeterParameter;
+import cn.edu.xust.communication.config.ApplicationContextHolder;
+import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.HashedWheelReader;
 import cn.edu.xust.communication.server.NettyServer;
 import cn.edu.xust.communication.util.HexConverter;
+import cn.edu.xust.mapper.AmmeterParameterMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -29,6 +33,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
     private boolean sechdelTaskLunch = true;
 
+    private String ammeterId;
     /**
      * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
      * key 存通道的ip , value 是服务器和客户端之间的通信通道
@@ -79,11 +84,11 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             //复制内容到字节数组
             buffer.readBytes(bytes);
             String hexString = HexConverter.receiveHexToString(bytes);
-
             //解析帧结构
             System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
             Dlt645Frame dlt645Frame = new Dlt645Frame().analysis(hexString);
             if(dlt645Frame!=null) {
+                ammeterId = dlt645Frame.getAddressField();
                 if (sechdelTaskLunch) {
                     //5分钟自动执行一次采集操作
                     new HashedWheelReader().executePer5Min(remoteAddress, dlt645Frame.getAddressField());
@@ -91,9 +96,24 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logException(e, this.ammeterId, AmmeterStatusEnum.DEVICE_ERROR.getMessage());
             log.error("server error:"+e.getMessage());
         }
+    }
+
+    public static void logException(Exception e, String ammeterId, String ammeterStatus) {
+        Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+        if (mapper instanceof AmmeterParameterMapper) {
+            AmmeterParameterMapper ammeterParameterMapper = (AmmeterParameterMapper) mapper;
+            AmmeterParameter ammeterParameter = new AmmeterParameter();
+            ammeterParameter.setDeviceNumber(ammeterId);
+            ammeterParameter.setAmmeterStatus(ammeterStatus);
+            int ret = ammeterParameterMapper.updateSelective(ammeterParameter);
+            if (ret <= 0) {
+                ammeterParameterMapper.insertSelective(ammeterParameter);
+            }
+        }
+        e.printStackTrace();
     }
 
 

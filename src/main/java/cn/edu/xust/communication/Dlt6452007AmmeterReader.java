@@ -1,8 +1,10 @@
 package cn.edu.xust.communication;
 
 import cn.edu.xust.communication.enums.AmmeterReader;
+import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.NettyServer;
+import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -26,9 +28,15 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
      */
     private String ammeterId;
 
+    /**
+     * 本次命令是否发送成功，成功返回true  失败返回false
+     */
+    private boolean writeCommandSuccess;
+
     public Dlt6452007AmmeterReader(String ammeterChannelIp, String ammeterId) {
         this.ammeterChannelIp = ammeterChannelIp;
         this.ammeterId = ammeterId;
+        this.writeCommandSuccess = true;
     }
 
     @Override
@@ -119,16 +127,17 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
      */
     private void sendCommand(String controlCode, String dataLen, String dataIdentification) {
         if (StringUtils.isEmpty(controlCode) || StringUtils.isEmpty(dataLen) || StringUtils.isEmpty(dataIdentification)
-                || StringUtils.isEmpty(ammeterId) || StringUtils.isEmpty(ammeterChannelIp)) {
+                || StringUtils.isEmpty(this.ammeterId) || StringUtils.isEmpty(this.ammeterChannelIp)) {
             throw new IllegalArgumentException("Message parameter can not be null");
         }
         try {
-            Dlt645Frame frame = new Dlt645Frame(ammeterId, controlCode, dataLen, dataIdentification);
-            NettyServer.writeCommand(ammeterChannelIp, frame.createFrame());
+            Dlt645Frame frame = new Dlt645Frame(this.ammeterId, controlCode, dataLen, dataIdentification);
+            NettyServer.writeCommand(this.ammeterChannelIp, frame.createFrame());
             //阻塞线程，等待设备的响应。不要删除！不然会因为服务器发送指令速度太快而设备处理不过来
             Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            //记录故障
+            NettyServerDefaultHandler.logException(e, this.ammeterId, AmmeterStatusEnum.NETWORK_ERROR.getMessage());
         }
     }
 
@@ -140,7 +149,8 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
             Class<? extends Dlt6452007AmmeterReader> clazz = this.getClass();
             Method[] methods = clazz.getMethods();
             for (Method method : methods) {
-                if(!"start".equalsIgnoreCase(method.getName())&&method.getName().startsWith("read")) {
+                if (!"start".equalsIgnoreCase(method.getName()) &&
+                        method.getName().startsWith("read")) {
                     method.invoke(this);
                 }
             }
