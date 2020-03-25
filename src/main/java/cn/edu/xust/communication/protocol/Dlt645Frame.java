@@ -2,12 +2,13 @@ package cn.edu.xust.communication.protocol;
 
 import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.config.ApplicationContextHolder;
+import cn.edu.xust.communication.enums.AmmeterReader;
 import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
+import cn.edu.xust.communication.util.FileUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.mapper.AmmeterParameterMapper;
 
-import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -27,7 +28,7 @@ public class Dlt645Frame {
     /**
      * DLT645协议帧最小字节数
      */
-    public static final int MIN_FRAME_LEN = 13;
+    public static final int MIN_FRAME_LEN = 16;
 
     /**帧结构中地址域的字节数*/
     public static final int ADDRESS_FIELD_LEN=6;
@@ -157,12 +158,29 @@ public class Dlt645Frame {
      * @throws Exception
      */
     public Dlt645Frame analysis(String hexString) throws Exception {
+        Map<String,String> properties=FileUtils.getPropertiesMap();
         Dlt645Frame frame = new Dlt645Frame();
         String recvCommand = HexConverter.fillBlank(hexString);
-        //电表读取命令中返回01 控制码是错误响应    6837030092813968 D1 01 35 5D 16
-        //                                      6837030092813968 91 07 33 33 36 35 33 33 33 58 16
         String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
-        if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN || !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
+        AmmeterParameter ammeterParameter = new AmmeterParameter();
+        ammeterParameter.setAcqTime(new Date());
+        if (commands.length < MIN_FRAME_LEN ||
+                commands.length > MAX_FRAME_LEN ||
+                !commands[0].equals(FRAME_STARTER) ||
+                !commands[commands.length - 1].equals(FRAME_END)) {
+            String controlCode=Dlt645FrameUtils.getControlBit(hexString);
+            if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
+                ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
+                ammeterParameter.setAmmeterStatus(properties.get(Dlt645FrameUtils.getData(hexString)));
+                Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+                if (mapper instanceof AmmeterParameterMapper) {
+                    AmmeterParameterMapper ammeterParamMapper = (AmmeterParameterMapper) mapper;
+                    int ret = ammeterParamMapper.updateSelective(ammeterParameter);
+                    if (ret <= 0) {
+                        ammeterParamMapper.insertSelective(ammeterParameter);
+                    }
+                }
+            }
             return null;
         } else {
             System.out.println("原始地址：" + Arrays.toString(commands));
@@ -178,10 +196,6 @@ public class Dlt645Frame {
             frame.setDataLength(Dlt645FrameUtils.getDataLength(hexString));
             frame.setCheckSum(Dlt645FrameUtils.checkSumOfRecv(hexString));
             frame.setData(Dlt645FrameUtils.getData(hexString));
-
-            AmmeterParameter ammeterParameter = new AmmeterParameter();
-            ammeterParameter.setAcqTime(new Date());
-            ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
             //解析数据标识
             List<String> list2 = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
@@ -199,17 +213,8 @@ public class Dlt645Frame {
                 dataIdentification.append(DTID[i]);
             }
 
-            //加载数据标识文件，确定数据的类型
-            InputStream is = new BufferedInputStream(new FileInputStream("src/config.properties"));
-            InputStreamReader isr = new InputStreamReader(is, "GBK");
-            Properties properties = new Properties();
-            try {
-                properties.load(isr);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             frame.setDataIdentification(dataIdentification.toString());
-            System.out.println("数据项名称：" + properties.getProperty(dataIdentification.toString()));
+            System.out.println("数据项名称：" + properties.get(dataIdentification.toString()));
             //解析返回数据
              if (commands.length > Dlt645Frame.MIN_FRAME_LEN) {
                 int DTID0 = Integer.parseInt(DTID[0]);
@@ -231,7 +236,7 @@ public class Dlt645Frame {
                         || (DTID0 == 0 && DTID1 == 6) || (DTID0 == 0 && DTID1 == 7) || (DTID0 == 0 && DTID1 == 8);
                 boolean isVoltageDataBlock=DTID0 == 2 && DTID1 == 1 && "FF".equals(String.valueOf(DTID[2]));
                 if (isVoltage) {
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.1")) + "v");
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.1")) + "v");
                     double voltage = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.1"))));
                     if ("02010100".contentEquals(dataIdentification.toString())) {
                         //A相电压
@@ -244,7 +249,7 @@ public class Dlt645Frame {
                         ammeterParameter.setCurrentCVoltage(voltage);
                     }
                 } else if (isCurrent) {
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")) + "A");
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")) + "A");
                     double current = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
                     if ("02020100".contentEquals(dataIdentification.toString())) {
                         //A相电流
@@ -258,7 +263,7 @@ public class Dlt645Frame {
                     }
                 } else if (isReactivePower) {
                     //有/无功功率0.0001
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.0001")));
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.0001")));
                     double power = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.0001"))));
                     if ("02030000".equals(dataIdentification.toString())) {
                         //有功功率
@@ -269,12 +274,12 @@ public class Dlt645Frame {
                     }
                 } else if (isPowerFactor) {
                     //功率因数0.001
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")));
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")));
                     double currentPowerFactor = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
                     ammeterParameter.setCurrentPowerFactor(currentPowerFactor);
                 } else if (isEnergy) {
                     //有/无功总电能、四象限无功总电能0.01
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.01")));
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.01")));
                     double enery = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.01"))));
                     if ("00000000".equals(dataIdentification.toString())) {
                         ammeterParameter.setCurrentTotalActivePower(enery);
@@ -289,7 +294,7 @@ public class Dlt645Frame {
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")))));
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")))));
                 } else {
-                    System.out.println(properties.getProperty(dataIdentification.toString()) + "：" + num);
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + num);
                 }
             }
             ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.OK.getMessage());
@@ -304,6 +309,7 @@ public class Dlt645Frame {
             return frame;
         }
     }
+
 
     private StringBuffer dataFormat(String[] data) {
         StringBuffer sbr = new StringBuffer();

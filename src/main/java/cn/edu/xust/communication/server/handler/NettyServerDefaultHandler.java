@@ -11,6 +11,7 @@ import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.mapper.AmmeterParameterMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since ：2020/02/18 16:54
  */
 @Component
+@ChannelHandler.Sharable
 @Slf4j
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
