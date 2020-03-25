@@ -3,7 +3,6 @@ package cn.edu.xust.communication.server;
 import cn.edu.xust.communication.exception.NotFoundDeviceException;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
 import cn.edu.xust.communication.util.HexConverter;
-import cn.edu.xust.service.ElectricMeterService;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -39,8 +38,7 @@ public class NettyServer implements NettyAsyncService,
 
     @Autowired
     private NettyServerDefaultHandler nettyServerDefaultHandler;
-    @Autowired
-    private ElectricMeterService electricMeterServiceImpl;
+
     /**监听的端口:可以在SpringBoot配置文件中配置*/
     @Value("${netty.server.port}")
     private int port;

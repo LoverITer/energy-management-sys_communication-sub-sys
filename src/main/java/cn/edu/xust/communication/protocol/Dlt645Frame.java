@@ -1,9 +1,15 @@
 package cn.edu.xust.communication.protocol;
 
+import cn.edu.xust.bean.AmmeterParameter;
+import cn.edu.xust.communication.config.ApplicationContextHolder;
+import cn.edu.xust.communication.enums.AmmeterReader;
+import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
+import cn.edu.xust.communication.util.FileUtils;
 import cn.edu.xust.communication.util.HexConverter;
+import cn.edu.xust.mapper.AmmeterParameterMapper;
 
-import java.io.*;
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -24,52 +30,38 @@ public class Dlt645Frame {
      */
     public static final int MIN_FRAME_LEN = 16;
 
-    /**
-     * 帧起始符
-     */
+    /**帧结构中地址域的字节数*/
+    public static final int ADDRESS_FIELD_LEN=6;
+
+    /**帧起始符*/
     public static final String FRAME_STARTER = "68";
 
-    /**
-     * 帧结束符
-     */
+    /** 帧结束符*/
     public static final String FRAME_END = "16";
 
-    /**
-     * 广播帧，当有新设备连接上来后服务端发送此指令和设备进行身份确认
-     */
+    /** 广播帧，当有新设备连接上来后服务端发送此指令和设备进行身份确认*/
     public static final String BROADCAST_FRAME = "68 AA AA AA AA AA AA 68 11 04 33 33 33 33 AD 16";
 
-    /**
-     * 地址域：即设备的出厂编号，智能电表的编号一般在正面的二维码上
-     */
+    /**地址域：即设备的出厂编号，智能电表的编号一般在正面的二维码上*/
     private String addressField;
 
-    /**
-     * 控制码
-     */
+    /** 控制码*/
     private String controlCode;
 
-    /**
-     * 数据域长度
-     */
+    /** 数据域长度*/
     private String dataLength;
 
-    /**
-     * 数据标识
-     */
+    /**数据标识*/
     private String dataIdentification;
 
     /**数据*/
     private String data;
 
-    /**
-     * 校验码
-     */
+    /**校验码*/
     private String checkSum;
 
-
-
     public Dlt645Frame() {
+
     }
 
     public Dlt645Frame(String addressField, String controlCode, String dataLength, String dataIdentification) {
@@ -166,10 +158,29 @@ public class Dlt645Frame {
      * @throws Exception
      */
     public Dlt645Frame analysis(String hexString) throws Exception {
+        Map<String,String> properties=FileUtils.getPropertiesMap();
         Dlt645Frame frame = new Dlt645Frame();
         String recvCommand = HexConverter.fillBlank(hexString);
         String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
-        if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN || !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
+        AmmeterParameter ammeterParameter = new AmmeterParameter();
+        ammeterParameter.setAcqTime(new Date());
+        if (commands.length < MIN_FRAME_LEN ||
+                commands.length > MAX_FRAME_LEN ||
+                !commands[0].equals(FRAME_STARTER) ||
+                !commands[commands.length - 1].equals(FRAME_END)) {
+            String controlCode=Dlt645FrameUtils.getControlBit(hexString);
+            if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
+                ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
+                ammeterParameter.setAmmeterStatus(properties.get(Dlt645FrameUtils.getData(hexString)));
+                Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+                if (mapper instanceof AmmeterParameterMapper) {
+                    AmmeterParameterMapper ammeterParamMapper = (AmmeterParameterMapper) mapper;
+                    int ret = ammeterParamMapper.updateSelective(ammeterParameter);
+                    if (ret <= 0) {
+                        ammeterParamMapper.insertSelective(ammeterParameter);
+                    }
+                }
+            }
             return null;
         } else {
             System.out.println("原始地址：" + Arrays.toString(commands));
@@ -190,6 +201,7 @@ public class Dlt645Frame {
             for (int i = 0; i < 4; i++) {
                 list2.add(Integer.toHexString(Integer.parseInt(commands[commands.length - 3 - i - (Integer.parseInt(commands[9], 16) - 4)], 16) - 51));
             }
+            //4字节的数据标识
             String[] DTID = list2.toArray(new String[list2.size()]);
             StringBuilder dataIdentification = new StringBuilder();
             for (int i = 0; i < DTID.length; i++) {
@@ -201,66 +213,109 @@ public class Dlt645Frame {
                 dataIdentification.append(DTID[i]);
             }
 
-            //加载数据标识文件，确定数据的类型
-            InputStream is = new BufferedInputStream(new FileInputStream("src/config.properties"));
-            InputStreamReader isr = new InputStreamReader(is, "GBK");
-            Properties properties = new Properties();
-            try {
-                properties.load(isr);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             frame.setDataIdentification(dataIdentification.toString());
-            System.out.println("数据项名称：" + properties.getProperty(dataIdentification.toString()));
-            return frame;
+            System.out.println("数据项名称：" + properties.get(dataIdentification.toString()));
             //解析返回数据
-           /* if (commands.length > 16) {
+             if (commands.length > Dlt645Frame.MIN_FRAME_LEN) {
                 int DTID0 = Integer.parseInt(DTID[0]);
                 int DTID1 = Integer.parseInt(DTID[1]);
-                List<String> list3 = new ArrayList();
+                List<String> list3 = new ArrayList<>();
                 for (int i = 0; i < Integer.parseInt(commands[9], 16) - 4; i++) {
                     list3.add(commands[commands.length - 3 - i]);
                 }
 
                 String[] data = list3.toArray(new String[list3.size()]);
-                long num = Long.parseLong((DataFormat(data)).toString());
+                long num = Long.parseLong((this.dataFormat(data)).toString());
                 BigDecimal bigDecimal = new BigDecimal(num);
-                if (DTID0 == 2 && DTID1 == 1 && !String.valueOf(DTID[2]).equals("FF")) {
-                    //电压0.1v
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.1")) + "v");
-                } else if (DTID0 == 2 && DTID1 == 2) {
-                    //电流0.001A
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")) + "A");
-                } else if ((DTID0 == 2 && DTID1 == 3) || (DTID0 == 2 && DTID1 == 4) || (DTID0 == 2 && DTID1 == 5)) {
-                    //有无功功率0.0001
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.0001")));
-                } else if (DTID0 == 2 && DTID1 == 6) {
+                boolean isVoltage=DTID0 == 2 && DTID1 == 1 && !"FF".equals(String.valueOf(DTID[2]));
+                boolean isCurrent=DTID0 == 2 && DTID1 == 2;
+                boolean isReactivePower=(DTID0 == 2 && DTID1 == 3) || (DTID0 == 2 && DTID1 == 4) || (DTID0 == 2 && DTID1 == 5);
+                boolean  isPowerFactor=DTID0 == 2 && DTID1 == 6;
+                boolean isEnergy=(DTID0 == 0 && DTID1 == 0) || (DTID0 == 0 && DTID1 == 1) || (DTID0 == 0 && DTID1 == 2)
+                        || (DTID0 == 0 && DTID1 == 3) || (DTID0 == 0 && DTID1 == 4) || (DTID0 == 0 && DTID1 == 5)
+                        || (DTID0 == 0 && DTID1 == 6) || (DTID0 == 0 && DTID1 == 7) || (DTID0 == 0 && DTID1 == 8);
+                boolean isVoltageDataBlock=DTID0 == 2 && DTID1 == 1 && "FF".equals(String.valueOf(DTID[2]));
+                if (isVoltage) {
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.1")) + "v");
+                    double voltage = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.1"))));
+                    if ("02010100".contentEquals(dataIdentification.toString())) {
+                        //A相电压
+                        ammeterParameter.setCurrentAVoltage(voltage);
+                    } else if ("02010200".contentEquals(dataIdentification.toString())) {
+                        //B相电压
+                        ammeterParameter.setCurrentBVoltage(voltage);
+                    } else if ("02010300".contentEquals(dataIdentification.toString())) {
+                        //B相电压
+                        ammeterParameter.setCurrentCVoltage(voltage);
+                    }
+                } else if (isCurrent) {
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")) + "A");
+                    double current = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
+                    if ("02020100".contentEquals(dataIdentification.toString())) {
+                        //A相电流
+                        ammeterParameter.setCurrentACurrent(current);
+                    } else if ("02020200".contentEquals(dataIdentification.toString())) {
+                        //B相电流
+                        ammeterParameter.setCurrentBCurrent(current);
+                    } else if ("02020300".contentEquals(dataIdentification.toString())) {
+                        //B相电流
+                        ammeterParameter.setCurrentCCurrent(current);
+                    }
+                } else if (isReactivePower) {
+                    //有/无功功率0.0001
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.0001")));
+                    double power = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.0001"))));
+                    if ("02030000".equals(dataIdentification.toString())) {
+                        //有功功率
+                        ammeterParameter.setCurrentActivePower(power);
+                    } else if ("02040000".equals(dataIdentification.toString())) {
+                        //无功功率
+                        ammeterParameter.setCurrentReactivePower(power);
+                    }
+                } else if (isPowerFactor) {
                     //功率因数0.001
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")));
-                } else if ((DTID0 == 0 && DTID1 == 0) || (DTID0 == 0 && DTID1 == 1) || (DTID0 == 0 && DTID1 == 2) || (DTID0 == 0 && DTID1 == 3) || (DTID0 == 0 && DTID1 == 4) || (DTID0 == 0 && DTID1 == 5) || (DTID0 == 0 && DTID1 == 6) || (DTID0 == 0 && DTID1 == 7) || (DTID0 == 0 && DTID1 == 8)) {
-                    //有无功总电能、四象限无功总电能0.01
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.01")));
-                } else if (DTID0 == 2 && DTID1 == 1 && String.valueOf(DTID[2]).equals("FF")) {
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.001")));
+                    double currentPowerFactor = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.001"))));
+                    ammeterParameter.setCurrentPowerFactor(currentPowerFactor);
+                } else if (isEnergy) {
+                    //有/无功总电能、四象限无功总电能0.01
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + bigDecimal.multiply(new BigDecimal("0.01")));
+                    double enery = Double.parseDouble(String.valueOf(bigDecimal.multiply(new BigDecimal("0.01"))));
+                    if ("00000000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentTotalActivePower(enery);
+                    } else if ("00010000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentPositiveActivePower(enery);
+                    } else if ("00020000".equals(dataIdentification.toString())) {
+                        ammeterParameter.setCurrentNegtiveActivePower(enery);
+                    }
+                } else if (isVoltageDataBlock) {
                     //电压数据块
-                    System.out.println(num);
-                    System.out.println(String.valueOf(num).substring(0, 4));
-                    System.out.println(String.valueOf(num).substring(4, 8));
-                    System.out.println(String.valueOf(num).substring(8));
-                    System.out.println("C相电压" + new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")));
-                    System.out.println("B相电压" + new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")));
-                    System.out.println("A相电压" + new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")));
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")))));
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")))));
+                    ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")))));
                 } else {
-                    System.out.println(properties.getProperty(sbr.toString()) + "：" + num);
+                    System.out.println(properties.get(dataIdentification.toString()) + "：" + num);
                 }
-            }*/
+            }
+            ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.OK.getMessage());
+            Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+            if(mapper instanceof AmmeterParameterMapper) {
+                AmmeterParameterMapper ammeterParamMapper=(AmmeterParameterMapper)mapper;
+                int ret = ammeterParamMapper.updateSelective(ammeterParameter);
+                if (ret <= 0) {
+                    ammeterParamMapper.insertSelective(ammeterParameter);
+                }
+            }
+            return frame;
         }
     }
 
-    private StringBuffer dataFormat(String data[]) {
+
+    private StringBuffer dataFormat(String[] data) {
         StringBuffer sbr = new StringBuffer();
-        for (int i = 0; i < data.length; i++) {
-            String data1 = String.valueOf(Integer.parseInt(data[i].substring(0, 1), 16) - 3);
-            String data2 = String.valueOf(Integer.parseInt(data[i].substring(1), 16) - 3);
+        for (String datum : data) {
+            String data1 = String.valueOf(Integer.parseInt(datum.substring(0, 1), 16) - 3);
+            String data2 = String.valueOf(Integer.parseInt(datum.substring(1), 16) - 3);
             sbr.append(data1);
             sbr.append(data2);
         }

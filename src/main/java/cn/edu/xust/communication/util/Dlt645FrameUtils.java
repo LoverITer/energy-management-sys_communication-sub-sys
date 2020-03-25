@@ -65,12 +65,12 @@ public final class Dlt645FrameUtils {
         String responseFrame = HexConverter.fillBlank(hexString);
         String[] messageArray = Objects.requireNonNull(responseFrame).split(" ");
         Stack<String> stack = new Stack<>();
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= Dlt645Frame.ADDRESS_FIELD_LEN; i++) {
             stack.push(messageArray[i]);
         }
         while (!stack.isEmpty()) {
-            String bit = stack.pop();
-            eleMeterId.append(bit);
+            String byteStr = stack.pop();
+            eleMeterId.append(byteStr);
         }
         return eleMeterId.toString();
     }
@@ -227,24 +227,6 @@ public final class Dlt645FrameUtils {
 
     public static void main(String[] args) {
 
-        System.out.println(getControlBit("68370300928139689108333333333A3333338E16"));
-        //System.out.println(DLT645FrameUtils.getEleMeterId2AddressFiled("68 37 03 00 92 81 39 68 91 08 33 33 34 33 37 33 33 33 8C 16"));
-        //DLT645FrameUtils.readData("398192000337", ElectricMeterReader.MasterRequestFrame.getControlCode(), "04", "33 33 34 33");
-        //System.out.println(DLT645FrameUtils.checkSum("68 04 00 00 78 93 45 68 11 04 33 33 34 33"));
-        /*"68 37 03 00 92 81 39 68 91 08 [33 33 34 33 | 37 33 33 33 ] 8C 16";
-        00 00 01 00                       DI0      DI3
-        37-33=04;
-        33-33=00;
-        33-33=00;
-        33-33=00; 000000.04KW/h;
-
-        68 37 03 00 92 81 39 68 91 08  [33 33 34 33  |3A 33 33 33 ] 8F 16
-        3A-33=07
-
-
-        68 37 03 00 92 81 39 68 91 06    33 34 34 35   C7 56    B6 16
-                                         00 01 01 02   [94 23] ==> 2394 ==>239.4v
-        */
     }
 
 }
