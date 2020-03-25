@@ -3,7 +3,6 @@ package cn.edu.xust.communication.server.handler;
 
 import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.config.ApplicationContextHolder;
-import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.HashedWheelReader;
 import cn.edu.xust.communication.server.NettyServer;
@@ -98,7 +97,6 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         } catch (Exception e) {
-            logException(e, this.ammeterId, AmmeterStatusEnum.DEVICE_ERROR.getMessage());
             log.error("server error:"+e.getMessage());
         }
     }

@@ -1,13 +1,16 @@
 package cn.edu.xust.communication.protocol;
 
 import cn.edu.xust.bean.AmmeterParameter;
+import cn.edu.xust.communication.Dlt6452007AmmeterReader;
 import cn.edu.xust.communication.config.ApplicationContextHolder;
 import cn.edu.xust.communication.enums.AmmeterReader;
 import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.FileUtils;
 import cn.edu.xust.communication.util.HexConverter;
+import cn.edu.xust.communication.util.RedisUtils;
 import cn.edu.xust.mapper.AmmeterParameterMapper;
+import com.alibaba.fastjson.JSON;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -26,7 +29,7 @@ public class Dlt645Frame {
      */
     public static final int MAX_FRAME_LEN = 22;
     /**
-     * DLT645协议帧最小字节数
+     * DLT645协议帧正常响应最小字节数
      */
     public static final int MIN_FRAME_LEN = 16;
 
@@ -155,19 +158,17 @@ public class Dlt645Frame {
      *  输入示例：681213432156768110433333333AD16
      * <pre/>
      * @param hexString 16进制字符串
-     * @throws Exception
      */
-    public Dlt645Frame analysis(String hexString) throws Exception {
+    public Dlt645Frame analysis(String hexString) {
+        //加载配置文件
         Map<String,String> properties=FileUtils.getPropertiesMap();
         Dlt645Frame frame = new Dlt645Frame();
-        String recvCommand = HexConverter.fillBlank(hexString);
-        String[] commands = Objects.requireNonNull(recvCommand).trim().split(" ");
+        String commandRCVD = HexConverter.fillBlank(hexString);
+        String[] commands = Objects.requireNonNull(commandRCVD).trim().split(" ");
         AmmeterParameter ammeterParameter = new AmmeterParameter();
         ammeterParameter.setAcqTime(new Date());
-        if (commands.length < MIN_FRAME_LEN ||
-                commands.length > MAX_FRAME_LEN ||
-                !commands[0].equals(FRAME_STARTER) ||
-                !commands[commands.length - 1].equals(FRAME_END)) {
+        if (commands.length < MIN_FRAME_LEN || commands.length > MAX_FRAME_LEN ||
+                !commands[0].equals(FRAME_STARTER) || !commands[commands.length - 1].equals(FRAME_END)) {
             String controlCode=Dlt645FrameUtils.getControlBit(hexString);
             if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
                 ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
@@ -180,17 +181,28 @@ public class Dlt645Frame {
                         ammeterParamMapper.insertSelective(ammeterParameter);
                     }
                 }
+
+                Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
+                if(redisUtils instanceof RedisUtils){
+                    String methodName = Dlt6452007AmmeterReader.getExecutedMethodQueue().poll();
+                    if(Objects.nonNull(methodName)) {
+                        //key:接口名
+                        ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), 30, RedisUtils.DB_0);
+                    }
+                }
             }
+
+
             return null;
         } else {
-            System.out.println("原始地址：" + Arrays.toString(commands));
+            System.out.println("原始帧：" + Arrays.toString(commands));
             System.out.println("帧起始符：" + commands[0]);
             System.out.println("电表地址：" + Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
             System.out.println("控制域：" + Dlt645FrameUtils.getControlBit(hexString));
             System.out.println("数据域长度：" + Dlt645FrameUtils.getDataLength(hexString));
             System.out.println("校验码：" + Dlt645FrameUtils.checkSumOfRecv(hexString));
             System.out.println("停止位：" + Dlt645FrameUtils.getStopBit(hexString));
-
+            ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
             frame.setAddressField(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
             frame.setControlCode(Dlt645FrameUtils.getControlBit(hexString));
             frame.setDataLength(Dlt645FrameUtils.getDataLength(hexString));
@@ -304,6 +316,14 @@ public class Dlt645Frame {
                 int ret = ammeterParamMapper.updateSelective(ammeterParameter);
                 if (ret <= 0) {
                     ammeterParamMapper.insertSelective(ammeterParameter);
+                }
+            }
+            Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
+            if(redisUtils instanceof RedisUtils){
+                String methodName = Dlt6452007AmmeterReader.getExecutedMethodQueue().poll();
+                if(Objects.nonNull(methodName)) {
+                    //key:接口名
+                    ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), 30, RedisUtils.DB_0);
                 }
             }
             return frame;

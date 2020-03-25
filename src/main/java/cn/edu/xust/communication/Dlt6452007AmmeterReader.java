@@ -9,9 +9,11 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 支持DLT645-2007协议的电对数据解析的具体实现
+ * 支持DLT645-2007协议数据解析的具体实现
  *
  * @author ：huangxin
  * @modified ：
@@ -28,15 +30,19 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
      */
     private String ammeterId;
 
-    /**
-     * 本次命令是否发送成功，成功返回true  失败返回false
-     */
-    private boolean writeCommandSuccess;
+    private static Queue<String> executedMethodQueue = new ConcurrentLinkedQueue<>();
+
+    public static Queue<String> getExecutedMethodQueue(){
+        return executedMethodQueue;
+    }
 
     public Dlt6452007AmmeterReader(String ammeterChannelIp, String ammeterId) {
         this.ammeterChannelIp = ammeterChannelIp;
         this.ammeterId = ammeterId;
-        this.writeCommandSuccess = true;
+        /**
+         * 本次命令是否发送成功，成功返回true  失败返回false
+         */
+        boolean writeCommandSuccess = true;
     }
 
     @Override
@@ -152,6 +158,8 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
                 if (!"start".equalsIgnoreCase(method.getName()) &&
                         method.getName().startsWith("read")) {
                     method.invoke(this);
+                    //将执行过的方法入队
+                    executedMethodQueue.offer(method.getName());
                 }
             }
         } catch (IllegalAccessException | InvocationTargetException e) {

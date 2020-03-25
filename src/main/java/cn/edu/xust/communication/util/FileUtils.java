@@ -29,8 +29,8 @@ public class FileUtils {
      */
     static {
         PROPERTIES=new HashMap<>();
-        Properties config = getLoadedProperties("src/config.properties", Charset.forName("GBK"));
-        Properties error = getLoadedProperties("src/error.properties", Charset.forName("GBK"));
+        Properties config = getLoadedProperties("src/main/java/META-INF/config.properties", Charset.forName("GBK"));
+        Properties error = getLoadedProperties("src/main/java/META-INF/error.properties", Charset.forName("GBK"));
         config.forEach((k,v)-> PROPERTIES.put(String.valueOf(k),String.valueOf(v)));
         error.forEach((k,v)->PROPERTIES.put(String.valueOf(k),String.valueOf(v)));
     }
