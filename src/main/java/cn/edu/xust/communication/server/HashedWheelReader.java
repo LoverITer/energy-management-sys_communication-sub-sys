@@ -1,6 +1,6 @@
 package cn.edu.xust.communication.server;
 
-import cn.edu.xust.communication.Dlt6452007AmmeterReader;
+import cn.edu.xust.communication.AmmeterAutoReader;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -91,7 +91,7 @@ public class HashedWheelReader {
         TimerTask task = new TimerTask() {
             @Override
             public void run(Timeout timeout) {
-                Dlt6452007AmmeterReader reader = new Dlt6452007AmmeterReader(remoteAddress, addressField);
+                AmmeterAutoReader reader = new AmmeterAutoReader(remoteAddress, addressField);
                 //解析数据
                 reader.start();
                 timer.newTimeout(this, time, timeUnit);

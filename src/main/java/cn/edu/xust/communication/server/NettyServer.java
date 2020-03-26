@@ -1,6 +1,7 @@
 package cn.edu.xust.communication.server;
 
 import cn.edu.xust.communication.exception.NotFoundDeviceException;
+import cn.edu.xust.communication.server.cache.ChannelMap;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
 import cn.edu.xust.communication.util.HexConverter;
 import io.netty.bootstrap.ServerBootstrap;
@@ -21,7 +22,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 
 
 /**
@@ -122,41 +126,61 @@ public class NettyServer implements NettyAsyncService,
      * @param cmd      下发的命令
      */
     public static boolean writeCommand(String deviceIp, String cmd) {
-        if (Objects.isNull(deviceIp) || Objects.isNull(NettyServerDefaultHandler.getDevicesMap())) {
+        if (Objects.isNull(deviceIp) || Objects.isNull(ChannelMap.getDevicesMap(deviceIp))) {
             //没有找到对应的设备,抛出异常
             throw new NotFoundDeviceException();
         }
         if(Objects.isNull(cmd)){
             throw new IllegalArgumentException("param cmd can not be null.");
         }
-        Channel channel = NettyServerDefaultHandler.getDevicesMap().get(deviceIp);
-        if (Objects.nonNull(channel)) {
-           return new NettyServer().writeMessage2Client(channel, cmd);
-        } else {
-            throw new NotFoundDeviceException();
-        }
-
+        return new NettyServer().writeMessage2Client(ChannelMap.getDevicesMap(deviceIp), deviceIp, cmd);
     }
 
     /**
      * 向客户端写数据
-     *
+     * @param socketAddress 通道地址
      * @param channel 服务器和设备建立的通道
      * @param hexMsg  命令信息
      */
-    private boolean writeMessage2Client(Channel channel, String hexMsg) {
-        ByteBuf byteBuf = Unpooled.buffer();
-        AtomicBoolean isSuccess= new AtomicBoolean(false);
-        byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
-        channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
-            String remoteAddress = channel.remoteAddress().toString();
-            if (channelFuture.isSuccess()) {
-                isSuccess.set(true);
-                System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
+    private boolean writeMessage2Client(Channel channel, String socketAddress, String hexMsg) {
+        Lock lock = ChannelMap.getChannelLock(socketAddress);
+        AtomicBoolean isSuccess = new AtomicBoolean(false);
+        lock.lock();
+        try {
+            if (Objects.nonNull(channel)) {
+                if (channel.isOpen()) {
+                    // 设置同步
+                    CountDownLatch latch = new CountDownLatch(1);
+                    NettyServerDefaultHandler nettyServerHandler = (NettyServerDefaultHandler) channel.pipeline().get("handler");
+                    nettyServerHandler.resetSync(latch, 1);
+                    nettyServerHandler.setUuidId(socketAddress);
+                    ByteBuf byteBuf = Unpooled.buffer();
+                    byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
+                    channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
+                        String remoteAddress = channel.remoteAddress().toString();
+                        if (channelFuture.isSuccess()) {
+                            isSuccess.set(true);
+                            System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
+                        } else {
+                            System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
+                        }
+                    });
+                    //同步返回结果:使用闭锁等到返回结果
+                    if (latch.await(60, TimeUnit.SECONDS)) {
+                        return isSuccess.get();
+                    }
+                    log.error("send command timeout");
+                    return isSuccess.get();
+                }
             } else {
-                System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
+                throw new NotFoundDeviceException();
             }
-        });
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+                lock.unlock();
+
+        }
         return isSuccess.get();
     }
 

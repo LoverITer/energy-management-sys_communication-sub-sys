@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @modified ：
  * @since ：2020/03/19 11:21
  */
-public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter {
+public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
 
     /**
      * 电表端的IP
@@ -36,7 +36,7 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
         return executedMethodQueue;
     }
 
-    public Dlt6452007AmmeterReader(String ammeterChannelIp, String ammeterId) {
+    public AmmeterAutoReader(String ammeterChannelIp, String ammeterId) {
         this.ammeterChannelIp = ammeterChannelIp;
         this.ammeterId = ammeterId;
         /**
@@ -152,7 +152,7 @@ public class Dlt6452007AmmeterReader extends AbstractAmmeterReaderWriterAdapter 
      */
     public void start() {
         try {
-            Class<? extends Dlt6452007AmmeterReader> clazz = this.getClass();
+            Class<? extends AmmeterAutoReader> clazz = this.getClass();
             Method[] methods = clazz.getMethods();
             for (Method method : methods) {
                 if (!"start".equalsIgnoreCase(method.getName()) &&

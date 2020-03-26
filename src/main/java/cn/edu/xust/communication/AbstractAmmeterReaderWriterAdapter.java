@@ -1,11 +1,14 @@
 package cn.edu.xust.communication;
 
+import cn.edu.xust.communication.remote.AmmeterRemoteReader;
+
 /**
  * @author ：huangxin
  * @modified ：
  * @since ：2020/03/20 00:17
  */
-public abstract class AbstractAmmeterReaderWriterAdapter implements AmmeterReaderWriter {
+public abstract class AbstractAmmeterReaderWriterAdapter
+        implements AmmeterReaderWriter, AmmeterRemoteReader {
 
     @Override
     public void readCurrentVA() {
