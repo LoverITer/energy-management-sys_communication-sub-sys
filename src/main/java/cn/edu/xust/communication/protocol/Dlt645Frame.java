@@ -28,6 +28,8 @@ public class Dlt645Frame {
      */
     public static final int MIN_FRAME_LEN = 16;
 
+    public static final int ERR_RESPONSE_FRAME_LEN=13;
+
     /**帧结构中地址域的字节数*/
     public static final int ADDRESS_FIELD_LEN=6;
 
@@ -118,7 +120,8 @@ public class Dlt645Frame {
             String controlCode=Dlt645FrameUtils.getControlBit(hexString);
             if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
                 ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
-                ammeterParameter.setAmmeterStatus(properties.get(Dlt645FrameUtils.getData(hexString)));
+                String status=properties.get("ERR_"+Dlt645FrameUtils.getData(hexString));
+                ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.DEVICE_ERROR.getMessage());
             }
             return ammeterParameter;
         } else {

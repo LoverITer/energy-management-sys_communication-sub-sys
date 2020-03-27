@@ -17,12 +17,12 @@ public enum AmmeterStatusEnum {
     /**
      *   网络故障
      */
-    NETWORK_ERROR(400, "网络故障"),
+    NETWORK_ERROR(400, "network error"),
 
     /**
      *  设备故障
      */
-    DEVICE_ERROR(500, "设备故障"),
+    DEVICE_ERROR(500, "device error"),
 
 
     /**
