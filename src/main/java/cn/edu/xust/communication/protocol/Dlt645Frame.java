@@ -1,16 +1,11 @@
 package cn.edu.xust.communication.protocol;
 
 import cn.edu.xust.bean.AmmeterParameter;
-import cn.edu.xust.communication.AmmeterAutoReader;
-import cn.edu.xust.communication.config.ApplicationContextHolder;
 import cn.edu.xust.communication.enums.AmmeterReader;
 import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.FileUtils;
 import cn.edu.xust.communication.util.HexConverter;
-import cn.edu.xust.communication.util.RedisUtils;
-import cn.edu.xust.mapper.AmmeterParameterMapper;
-import com.alibaba.fastjson.JSON;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -124,27 +119,8 @@ public class Dlt645Frame {
             if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
                 ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
                 ammeterParameter.setAmmeterStatus(properties.get(Dlt645FrameUtils.getData(hexString)));
-                this.flushData2Redis(ammeterParameter);
-                this.flushData2DataBase(ammeterParameter);
-               /* Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
-                if (mapper instanceof AmmeterParameterMapper) {
-                    AmmeterParameterMapper ammeterParamMapper = (AmmeterParameterMapper) mapper;
-                    int ret = ammeterParamMapper.updateSelective(ammeterParameter);
-                    if (ret <= 0) {
-                        ammeterParamMapper.insertSelective(ammeterParameter);
-                    }
-                }
-
-                Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
-                if(redisUtils instanceof RedisUtils){
-                    String methodName = Dlt6452007AmmeterReader.getExecutedMethodQueue().poll();
-                    if(Objects.nonNull(methodName)) {
-                        //key:接口名
-                        ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), 30, RedisUtils.DB_0);
-                    }
-                }*/
             }
-            return null;
+            return ammeterParameter;
         } else {
             System.out.println("原始帧：" + Arrays.toString(commands));
             System.out.println("帧起始符：" + commands[0]);
@@ -251,29 +227,9 @@ public class Dlt645Frame {
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(8)).multiply(new BigDecimal("0.1")))));
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(4, 8)).multiply(new BigDecimal("0.1")))));
                     ammeterParameter.setCurrentAVoltage(Double.parseDouble(String.valueOf(new BigDecimal(String.valueOf(num).substring(0, 4)).multiply(new BigDecimal("0.1")))));
-                } else {
-                    System.out.println(properties.get(dataIdentification.toString()) + "：" + num);
                 }
             }
             ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.OK.getMessage());
-            /*Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
-            if(mapper instanceof AmmeterParameterMapper) {
-                AmmeterParameterMapper ammeterParamMapper=(AmmeterParameterMapper)mapper;
-                int ret = ammeterParamMapper.updateSelective(ammeterParameter);
-                if (ret <= 0) {
-                    ammeterParamMapper.insertSelective(ammeterParameter);
-                }
-            }
-            Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
-            if(redisUtils instanceof RedisUtils){
-                String methodName = Dlt6452007AmmeterReader.getExecutedMethodQueue().poll();
-                if(Objects.nonNull(methodName)) {
-                    //key:接口名
-                    ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), 30, RedisUtils.DB_0);
-                }
-            }*/
-            flushData2DataBase(ammeterParameter);
-            flushData2Redis(ammeterParameter);
             return ammeterParameter;
         }
     }
@@ -288,39 +244,6 @@ public class Dlt645Frame {
             sbr.append(data2);
         }
         return sbr;
-    }
-
-
-    /**
-     * 把数据刷新到数据库
-     *
-     * @param ammeterParameter 参数对象
-     */
-    private void flushData2DataBase(AmmeterParameter ammeterParameter) {
-        Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
-        if (mapper instanceof AmmeterParameterMapper) {
-            AmmeterParameterMapper ammeterParamMapper = (AmmeterParameterMapper) mapper;
-            int ret = ammeterParamMapper.updateSelective(ammeterParameter);
-            if (ret <= 0) {
-                ammeterParamMapper.insertSelective(ammeterParameter);
-            }
-        }
-    }
-
-    /**
-     * 把数据刷新到Redis
-     *
-     * @param ammeterParameter 参数对象
-     */
-    private void flushData2Redis(AmmeterParameter ammeterParameter) {
-        Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
-        if (redisUtils instanceof RedisUtils) {
-            String methodName = AmmeterAutoReader.getExecutedMethodQueue().poll();
-            if (Objects.nonNull(methodName)) {
-                //key:接口名
-                ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), RedisUtils.DB_0);
-            }
-        }
     }
 
 }

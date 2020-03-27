@@ -1,40 +1,25 @@
 package cn.edu.xust.communication.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.io.Serializable;
 
 /**
- * @author ：huangxin
- * @modified ：
- * @since ：2020/03/26 14:48
+ * 用于封装返回客户端的异步消息
+ * @author huanxin
+ * @since 2020/03/27
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Result implements Serializable {
-
+    private static final long serialVersionUID = -7033707301911915197L;
 
     private int code;
-    private Object message;
+    private String message;
     private String uniId;
 
-    public int getCode() {
-        return code;
-    }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
-    public Object getMessage() {
-        return message;
-    }
-
-    public void setMessage(Object message) {
-        this.message = message;
-    }
-
-    public String getUniId() {
-        return uniId;
-    }
-
-    public void setUniId(String uniId) {
-        this.uniId = uniId;
-    }
 }

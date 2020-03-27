@@ -1,7 +1,9 @@
 package cn.edu.xust.communication;
 
+import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.enums.AmmeterReader;
 import cn.edu.xust.communication.enums.AmmeterStatusEnum;
+import cn.edu.xust.communication.model.Result;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.NettyServer;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
@@ -9,7 +11,9 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -30,6 +34,8 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
      */
     private String ammeterId;
 
+    private final NettyServer server;
+
     private static Queue<String> executedMethodQueue = new ConcurrentLinkedQueue<>();
 
     public static Queue<String> getExecutedMethodQueue(){
@@ -39,89 +45,163 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
     public AmmeterAutoReader(String ammeterChannelIp, String ammeterId) {
         this.ammeterChannelIp = ammeterChannelIp;
         this.ammeterId = ammeterId;
-        /**
-         * 本次命令是否发送成功，成功返回true  失败返回false
-         */
-        boolean writeCommandSuccess = true;
+        this.server=new NettyServer();
     }
 
     @Override
-    public void readCurrentVA() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentVA() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 34 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentAVoltage();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentVB() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentVB() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 34 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentBVoltage();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentVC() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentVC() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 34 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentCVoltage();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentIA() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentIA() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 35 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentACurrent();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentIB() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentIB() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 35 35 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentBCurrent();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentIC() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentIC() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 36 35 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentCCurrent();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentActivePower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentActivePower() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 36 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentActivePower();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentReactivePower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentReactivePower() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 37 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentReactivePower();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentPowerFactor() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentPowerFactor() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 39 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentPowerFactor();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentTotalApparentPower() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentTotalApparentPower() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 38 35");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentTotalActivePower();
+        }
+        return null;
     }
 
 
     @Override
-    public void readCurrentTotalActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentTotalActiveEnergy() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 33 33");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentTotalActivePower();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentPositiveActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentPositiveActiveEnergy() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 34 33");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentPositiveActivePower();
+        }
+        return null;
     }
 
     @Override
-    public void readCurrentNegativeActiveEnergy() {
-        this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
+    public Double readCurrentNegativeActiveEnergy() {
+        Result result = this.sendCommand(AmmeterReader.MasterRequestFrame.getControlCode(),
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 33 35 33");
+        if (Objects.nonNull(result)) {
+            AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            return ammeterParameter.getCurrentNegtiveActivePower();
+        }
+        return null;
+    }
+
+    /**
+     * 解析并持久化数据，之后再将数据返回给调用者
+     */
+    private AmmeterParameter parseAndPersistenceData(Result result) {
+        Dlt645Frame frame = new Dlt645Frame();
+        AmmeterParameter ammeterParameter = frame.analysis(result.getMessage());
+        if (server != null) {
+            server.flushData2DataBase(ammeterParameter);
+        }
+        return ammeterParameter;
     }
 
     /**
@@ -131,20 +211,19 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
      * @param dataLen            数据长度
      * @param dataIdentification 数据标识
      */
-    private void sendCommand(String controlCode, String dataLen, String dataIdentification) {
+    private Result sendCommand(String controlCode, String dataLen, String dataIdentification) {
         if (StringUtils.isEmpty(controlCode) || StringUtils.isEmpty(dataLen) || StringUtils.isEmpty(dataIdentification)
                 || StringUtils.isEmpty(this.ammeterId) || StringUtils.isEmpty(this.ammeterChannelIp)) {
             throw new IllegalArgumentException("Message parameter can not be null");
         }
         try {
             Dlt645Frame frame = new Dlt645Frame(this.ammeterId, controlCode, dataLen, dataIdentification);
-            NettyServer.writeCommand(this.ammeterChannelIp, frame.createFrame());
-            //阻塞线程，等待设备的响应。不要删除！不然会因为服务器发送指令速度太快而设备处理不过来
-            Thread.sleep(1000);
+            return NettyServer.writeCommand(this.ammeterChannelIp, frame.createFrame(), UUID.randomUUID().toString());
         } catch (Exception e) {
             //记录故障
             NettyServerDefaultHandler.logException(e, this.ammeterId, AmmeterStatusEnum.NETWORK_ERROR.getMessage());
         }
+        return null;
     }
 
     /**
@@ -160,10 +239,12 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
                     method.invoke(this);
                     //将执行过的方法入队
                     executedMethodQueue.offer(method.getName());
+                    Thread.sleep(1000);
                 }
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException | InterruptedException e) {
             e.printStackTrace();
         }
     }
+
 }

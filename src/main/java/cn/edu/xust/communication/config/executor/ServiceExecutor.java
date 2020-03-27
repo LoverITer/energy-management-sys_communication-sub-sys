@@ -1,8 +1,8 @@
 package cn.edu.xust.communication.config.executor;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -16,10 +16,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @modified ：
  * @since ：2020/02/19 10:00
  */
-@SpringBootConfiguration
+@Configuration
 @EnableAsync
 @Slf4j
-public class ExecutorConfig {
+public class ServiceExecutor {
 
     @Bean
     public Executor asyncServiceExecutor() {

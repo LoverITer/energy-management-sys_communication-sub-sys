@@ -1,7 +1,8 @@
 package cn.edu.xust.communication.server.cache;
 
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
@@ -18,19 +19,21 @@ public class ChannelMap {
      * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
      * key 存通道的ip , value 是服务器和客户端之间的通信通道
      */
-    private static ConcurrentHashMap<String, Channel> devicesMap = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, ChannelHandlerContext> devicesMap = new ConcurrentHashMap<>();
 
     /**
      * 设备锁标志
      */
     private static ConcurrentHashMap<String, Lock> channelLockMap = new ConcurrentHashMap<>();
 
+    /**电表号映射到通信通道socket*/
+    private static ConcurrentHashMap<String,String> deviceNumMap2DeviceIp=new ConcurrentHashMap<>();
 
-    public static void setDevicesMap(String socketAddress,Channel channel){
-        devicesMap.put(socketAddress,channel);
+    public static void setDevicesMap(String socketAddress,ChannelHandlerContext ctx){
+        devicesMap.put(socketAddress,ctx);
     }
 
-    public static Channel getDevicesMap(String socketAddress){
+    public static ChannelHandlerContext getDeviceFromMap(String socketAddress){
         return devicesMap.get(socketAddress);
     }
 
@@ -48,5 +51,20 @@ public class ChannelMap {
 
     public static Lock getChannelLock(String socketAddress){
         return channelLockMap.get(socketAddress);
+    }
+
+    public static String getDeviceIp(String deviceNum) {
+        return deviceNumMap2DeviceIp.get(deviceNum);
+    }
+
+    /***
+     * 绑定建立连接的设备ID和设备socket ip
+     * @param deviceNum
+     * @param deviceSocket
+     */
+    public static void bindDeviceNumAndDeviceSocket(String deviceNum,String deviceSocket) {
+        if(Objects.nonNull(deviceNum) &&Objects.nonNull(deviceSocket)) {
+            deviceNumMap2DeviceIp.put(deviceNum, deviceSocket);
+        }
     }
 }

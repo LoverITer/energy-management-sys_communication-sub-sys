@@ -13,19 +13,19 @@ public interface AmmeterReaderWriter {
      * 当前A相电压
      * @return A相电压（V）
      */
-    void readCurrentVA();
+    Double readCurrentVA();
 
     /**
      * 当前B相电压
      * @return B相电压（V）
      */
-    void readCurrentVB();
+    Double readCurrentVB();
 
     /**
      * 当前C相电压
      * @return C相电压（V）
      */
-    void readCurrentVC();
+    Double readCurrentVC();
 
     /**
      * 当前A相电流
@@ -33,7 +33,7 @@ public interface AmmeterReaderWriter {
      *
      * @return A相电流（A）
      */
-    void readCurrentIA();
+    Double readCurrentIA();
 
     /**
      * 当前B相电压
@@ -41,7 +41,7 @@ public interface AmmeterReaderWriter {
      *
      * @return B相电流（A）
      */
-    void readCurrentIB();
+    Double readCurrentIB();
 
     /**
      * 当前C相电压
@@ -49,7 +49,7 @@ public interface AmmeterReaderWriter {
      *
      * @return C相电流（A）
      */
-    void readCurrentIC();
+    Double readCurrentIC();
 
     /**
      * 当前总有功功率
@@ -57,7 +57,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 总有功功率(W)
      */
-    void readCurrentActivePower();
+    Double readCurrentActivePower();
 
     /**
      * 当前总无用功率
@@ -65,7 +65,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 总有功功率(Var)
      */
-    void readCurrentReactivePower();
+    Double readCurrentReactivePower();
 
     /**
      * 当前总功率因数
@@ -73,7 +73,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 总功率因数
      */
-    void readCurrentPowerFactor();
+    Double readCurrentPowerFactor();
 
     /**
      * 当前总视在功率
@@ -81,7 +81,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 当前总视在功率（Var）
      */
-    void readCurrentTotalApparentPower();
+    Double readCurrentTotalApparentPower();
 
     /**
      * 读取当前电表总有功电能
@@ -89,7 +89,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 总有功电能（KWh）
      */
-    void readCurrentTotalActiveEnergy();
+    Double readCurrentTotalActiveEnergy();
 
     /**
      * 读取当前电表正向有功电能
@@ -97,7 +97,7 @@ public interface AmmeterReaderWriter {
      *
      * @return 正向有功电能（KWh）
      */
-    void readCurrentPositiveActiveEnergy();
+    Double readCurrentPositiveActiveEnergy();
 
 
     /**
@@ -106,6 +106,6 @@ public interface AmmeterReaderWriter {
      *
      * @return 反向有功电能（KWh）
      */
-    void readCurrentNegativeActiveEnergy();
+    Double readCurrentNegativeActiveEnergy();
 
 }

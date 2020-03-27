@@ -226,7 +226,7 @@ public final class Dlt645FrameUtils {
 
 
     public static void main(String[] args) {
-
+        System.out.println(checkSum("68 37 03 00 92 81 39 68 11 04 33 32 34 35"));
     }
 
 }

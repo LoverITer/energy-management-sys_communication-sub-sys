@@ -1,9 +1,16 @@
 package cn.edu.xust.communication.server;
 
+import cn.edu.xust.bean.AmmeterParameter;
+import cn.edu.xust.communication.AmmeterAutoReader;
+import cn.edu.xust.communication.config.ApplicationContextHolder;
 import cn.edu.xust.communication.exception.NotFoundDeviceException;
+import cn.edu.xust.communication.model.Result;
 import cn.edu.xust.communication.server.cache.ChannelMap;
 import cn.edu.xust.communication.server.handler.NettyServerDefaultHandler;
 import cn.edu.xust.communication.util.HexConverter;
+import cn.edu.xust.communication.util.RedisUtils;
+import cn.edu.xust.mapper.AmmeterParameterMapper;
+import com.alibaba.fastjson.JSON;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -24,7 +31,6 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 
@@ -35,7 +41,7 @@ import java.util.concurrent.locks.Lock;
  * @modified ：
  * @since ：2020/02/18 16:12
  */
-@Component
+@Component(value = "NettyServer")
 @Slf4j
 public class NettyServer implements NettyAsyncService,
         ApplicationRunner, ApplicationListener<ContextClosedEvent> {
@@ -43,12 +49,18 @@ public class NettyServer implements NettyAsyncService,
     @Autowired
     private NettyServerDefaultHandler nettyServerDefaultHandler;
 
-    /**监听的端口:可以在SpringBoot配置文件中配置*/
+    /**
+     * 监听的端口:可以在SpringBoot配置文件中配置
+     */
     @Value("${netty.server.port}")
     private int port;
-    /** bossGroup：负责处理连接请求的线程组*/
+    /**
+     * bossGroup：负责处理连接请求的线程组
+     */
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    /** worker：负责处理具体I/O时间的线程组*/
+    /**
+     * worker：负责处理具体I/O时间的线程组
+     */
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 
@@ -125,63 +137,99 @@ public class NettyServer implements NettyAsyncService,
      * @param deviceIp 设备ID
      * @param cmd      下发的命令
      */
-    public static boolean writeCommand(String deviceIp, String cmd) {
-        if (Objects.isNull(deviceIp) || Objects.isNull(ChannelMap.getDevicesMap(deviceIp))) {
+    public static Result writeCommand(String deviceIp, String cmd, String uuid) {
+        if (Objects.isNull(deviceIp) || Objects.isNull(ChannelMap.getDeviceFromMap(deviceIp))) {
             //没有找到对应的设备,抛出异常
             throw new NotFoundDeviceException();
         }
-        if(Objects.isNull(cmd)){
+        if (Objects.isNull(cmd)) {
             throw new IllegalArgumentException("param cmd can not be null.");
         }
-        return new NettyServer().writeMessage2Client(ChannelMap.getDevicesMap(deviceIp), deviceIp, cmd);
+        ChannelHandlerContext ctx = ChannelMap.getDeviceFromMap(deviceIp);
+        if (Objects.nonNull(ctx)) {
+            return new NettyServer().writeMessage2Client(ctx, cmd, uuid);
+        }
+        return new Result(0, "Client is closed!!", null);
     }
 
     /**
-     * 向客户端写数据
-     * @param socketAddress 通道地址
-     * @param channel 服务器和设备建立的通道
-     * @param hexMsg  命令信息
+     * 向客户端写数据,并且同步等待客户端返回消息
+     *
+     * @param ctx    服务器和设备建立的通道
+     * @param hexMsg 命令信息
+     * @param uuid   消息的唯一编号
      */
-    private boolean writeMessage2Client(Channel channel, String socketAddress, String hexMsg) {
-        Lock lock = ChannelMap.getChannelLock(socketAddress);
-        AtomicBoolean isSuccess = new AtomicBoolean(false);
+    private Result writeMessage2Client(ChannelHandlerContext ctx, String hexMsg, String uuid) {
+        Channel channel = ctx.channel();
+        Lock lock = ChannelMap.getChannelLock(channel.remoteAddress().toString());
         lock.lock();
         try {
-            if (Objects.nonNull(channel)) {
-                if (channel.isOpen()) {
-                    // 设置同步
-                    CountDownLatch latch = new CountDownLatch(1);
-                    NettyServerDefaultHandler nettyServerHandler = (NettyServerDefaultHandler) channel.pipeline().get("handler");
-                    nettyServerHandler.resetSync(latch, 1);
-                    nettyServerHandler.setUuidId(socketAddress);
+            if (channel.isOpen()) {
+                //设置同步
+                CountDownLatch latch = new CountDownLatch(1);
+                ChannelHandler channelHandler = ctx.handler();
+                if (channelHandler instanceof NettyServerDefaultHandler) {
+                    ((NettyServerDefaultHandler) channelHandler).resetSync(latch, 1);
+                    ((NettyServerDefaultHandler) channelHandler).setUnidId(uuid);
                     ByteBuf byteBuf = Unpooled.buffer();
                     byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
                     channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
                         String remoteAddress = channel.remoteAddress().toString();
                         if (channelFuture.isSuccess()) {
-                            isSuccess.set(true);
                             System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
                         } else {
                             System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
                         }
                     });
-                    //同步返回结果:使用闭锁等到返回结果
-                    if (latch.await(60, TimeUnit.SECONDS)) {
-                        return isSuccess.get();
+                    if (latch.await(30, TimeUnit.SECONDS)) {
+                        System.out.println(((NettyServerDefaultHandler) channelHandler).getResult().getMessage());
+                        return ((NettyServerDefaultHandler) channelHandler).getResult();
                     }
-                    log.error("send command timeout");
-                    return isSuccess.get();
+                    //如果超时，将超时标志设置为1
+                    log.error("Request timeout 60s");
                 }
+                return new Result(2, "Request timeout!", null);
             } else {
-                throw new NotFoundDeviceException();
+                return new Result(0, "Client is closed!!", null);
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return new Result(0, "Internal server error!", null);
         } finally {
-                lock.unlock();
-
+            lock.unlock();
         }
-        return isSuccess.get();
+    }
+
+    /**
+     * 把数据刷新到数据库
+     *
+     * @param ammeterParameter 参数对象
+     */
+    public void flushData2DataBase(AmmeterParameter ammeterParameter) {
+        Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+        if (mapper instanceof AmmeterParameterMapper) {
+            AmmeterParameterMapper ammeterParamMapper = (AmmeterParameterMapper) mapper;
+            int ret = ammeterParamMapper.updateSelective(ammeterParameter);
+            if (ret <= 0) {
+                ammeterParamMapper.insertSelective(ammeterParameter);
+            }
+        }
+    }
+
+    /**
+     * 把数据刷新到Redis
+     *
+     * @param ammeterParameter 参数对象
+     */
+    public void flushData2Redis(AmmeterParameter ammeterParameter) {
+        Object redisUtils = ApplicationContextHolder.getBean("redisUtils");
+        if (redisUtils instanceof RedisUtils) {
+            String methodName = AmmeterAutoReader.getExecutedMethodQueue().poll();
+            if (Objects.nonNull(methodName)) {
+                //key:接口名
+                ((RedisUtils) redisUtils).set(methodName, JSON.toJSON(ammeterParameter), RedisUtils.DB_0);
+            }
+        }
     }
 
 }

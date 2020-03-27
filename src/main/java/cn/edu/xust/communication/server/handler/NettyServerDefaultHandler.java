@@ -3,22 +3,23 @@ package cn.edu.xust.communication.server.handler;
 
 import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.config.ApplicationContextHolder;
-import cn.edu.xust.communication.config.executor.ServiceThreadPool;
 import cn.edu.xust.communication.model.Result;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.HashedWheelReader;
 import cn.edu.xust.communication.server.NettyServer;
 import cn.edu.xust.communication.server.cache.ChannelMap;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.mapper.AmmeterParameterMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -30,18 +31,27 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since ：2020/02/18 16:54
  */
 @Component
-@ChannelHandler.Sharable
 @Slf4j
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
+
     /**
-     * 闭锁，用于异步等待客户端的消息
+     * 电表号
+     */
+    private String ammeterId;
+    /**
+     * 开启定时采集任务标志
+     */
+    private boolean timingTaskLunch = true;
+    /**
+     * 同步锁
      */
     private CountDownLatch latch;
+
     /**
-     * 消息唯一标志
+     * 消息的唯一ID
      */
-    private String messageUuid = "";
+    private String unidId = "";
     /**
      * 同步标志
      */
@@ -49,25 +59,13 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     /**
      * 客户端返回的结果
      */
-    private Result result;
+    private Result result = new Result();
 
 
     public NettyServerDefaultHandler() {
 
     }
 
-    public void resetSync(CountDownLatch latch, int rec) {
-        this.latch = latch;
-        this.rec = rec;
-    }
-
-    public void setUuidId(String s) {
-        this.messageUuid = s;
-    }
-
-    public Result getResult() {
-        return result;
-    }
 
     /**
      * 在客户端和服务器首次建立通信通道的时候触发次方法
@@ -77,15 +75,18 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Channel socketChannel = ctx.channel();
-        /*将设备remoteAddress当作 map 的key*/
-        String remoteAddress = socketChannel.remoteAddress().toString();
-        if (ChannelMap.getDevicesMap(remoteAddress) != null) {
-            ChannelMap.setDevicesMap(remoteAddress, ctx.channel());
-            log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + ChannelMap.currentOnlineDevicesNum());
-            ChannelMap.setChannelLock(remoteAddress,new ReentrantLock());
-            NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME);
-        }
+        new Thread(()->{
+            Channel socketChannel = ctx.channel();
+            /*将设备remoteAddress当作 map 的key*/
+            String remoteAddress = socketChannel.remoteAddress().toString();
+            if (ChannelMap.getDeviceFromMap(remoteAddress) == null) {
+                ChannelMap.setChannelLock(remoteAddress, new ReentrantLock());
+                ChannelMap.setDevicesMap(remoteAddress, ctx);
+                log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + ChannelMap.currentOnlineDevicesNum());
+                NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME, UUID.randomUUID().toString());
+            }
+        }).start();
+
     }
 
     /**
@@ -96,42 +97,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        Object executor = ApplicationContextHolder.getBean("asyncServiceExecutor");
-        if (executor instanceof ServiceThreadPool) {
-            ((ServiceThreadPool) executor).executor().execute(new DataAnalyzeTask(ctx,msg));
-        }
-    }
-
-
-    /**
-     * 数据解析任务 DataAnalyzeTask
-     */
-    static class DataAnalyzeTask implements Runnable {
-
-        /**
-         * 通达上下文对象
-         */
-        private ChannelHandlerContext ctx;
-        /**
-         * 消息
-         */
-        private Object msg;
-        /**
-         * 电表号
-         */
-        private String ammeterId;
-        /**
-         * 开启定时采集任务标志
-         */
-        private boolean timingTaskLunch = true;
-
-        private DataAnalyzeTask(ChannelHandlerContext ctx, Object msg) {
-            this.ctx = ctx;
-            this.msg = msg;
-        }
-
-        @Override
-        public void run() {
+        new Thread(()->{
             try {
                 ByteBuf buffer = (ByteBuf) msg;
                 //客户端IP
@@ -140,19 +106,27 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                 //复制内容到字节数组
                 buffer.readBytes(bytes);
                 String hexString = HexConverter.receiveHexToString(bytes);
-                //解析帧结构
                 System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
-                AmmeterParameter ammeterParameter = new Dlt645Frame().analysis(hexString);
-                if (ammeterParameter != null && timingTaskLunch) {
-                    ammeterId = ammeterParameter.getDeviceNumber();
+                result.setMessage(hexString);
+                if (timingTaskLunch) {
+                    //解析第一次建立连接时的数据解析出ammeterId
+                    String ammeterId = Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
+                    //AmmeterParameter ammeterParameter = new Dlt645Frame().analysis(hexString);
+                    ChannelMap.bindDeviceNumAndDeviceSocket(ammeterId, remoteAddress);
                     //5分钟自动执行一次采集操作
-                    new HashedWheelReader().executePer5Min(remoteAddress, ammeterParameter.getDeviceNumber());
+                    new HashedWheelReader().executePer5Min(remoteAddress, ammeterId);
                     timingTaskLunch = false;
                 }
             } catch (Exception e) {
                 log.error("server error:" + e.getMessage());
+            } finally {
+                if (Objects.nonNull(latch)) {
+                    latch.countDown();
+                }
+                rec = 0;
             }
-        }
+        }).start();
+
     }
 
 
@@ -210,6 +184,19 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
             }
         }
         e.printStackTrace();
+    }
+
+    public void resetSync(CountDownLatch latch, int rec) {
+        this.latch = latch;
+        this.rec = rec;
+    }
+
+    public void setUnidId(String s) {
+        this.unidId = s;
+    }
+
+    public Result getResult() {
+        return result;
     }
 
 }
