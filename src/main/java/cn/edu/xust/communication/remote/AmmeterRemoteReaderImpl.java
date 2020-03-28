@@ -29,7 +29,7 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
 
 
     @Override
-    public List<AmmeterParameter> realTelemetry(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realTelemetry(List<String> deviceNumberList) {
         ArrayList<AmmeterParameter> list = new ArrayList<>();
         deviceNumberList.forEach(deviceNum -> {
             AmmeterAutoReader reader = new AmmeterAutoReader(ChannelMap.getDeviceIp(deviceNum), deviceNum);
@@ -37,12 +37,12 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
             ammeterParameter.setDeviceNumber(deviceNum);
             //电流
             ammeterParameter.setCurrentACurrent(reader.readCurrentIA());
-            ammeterParameter.setCurrentACurrent(reader.readCurrentIB());
-            ammeterParameter.setCurrentACurrent(reader.readCurrentIC());
+            ammeterParameter.setCurrentBCurrent(reader.readCurrentIB());
+            ammeterParameter.setCurrentCCurrent(reader.readCurrentIC());
            //电压
             ammeterParameter.setCurrentAVoltage(reader.readCurrentVA());
-            ammeterParameter.setCurrentAVoltage(reader.readCurrentVB());
-            ammeterParameter.setCurrentAVoltage(reader.readCurrentVC());
+            ammeterParameter.setCurrentBVoltage(reader.readCurrentVB());
+            ammeterParameter.setCurrentCVoltage(reader.readCurrentVC());
            //有、无功功率
             ammeterParameter.setCurrentActivePower(reader.readCurrentActivePower());
             ammeterParameter.setCurrentReactivePower(reader.readCurrentReactivePower());
@@ -54,7 +54,7 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
     }
 
     @Override
-    public List<AmmeterParameter> realRegion(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realRegion(List<String> deviceNumberList) {
         ArrayList<AmmeterParameter> list = new ArrayList<>();
         deviceNumberList.forEach(deviceNum-> {
             AmmeterAutoReader reader = new AmmeterAutoReader(ChannelMap.getDeviceIp(deviceNum), deviceNum);
@@ -66,7 +66,7 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
     }
 
     @Override
-    public List<AmmeterParameter> realMeter(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realMeter(List<String> deviceNumberList) {
         ArrayList<AmmeterParameter> list = new ArrayList<>();
         deviceNumberList.forEach(deviceNum-> {
             AmmeterAutoReader reader = new AmmeterAutoReader(ChannelMap.getDeviceIp(deviceNum), deviceNum);
@@ -79,7 +79,7 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
     }
 
     @Override
-    public List<AmmeterParameter> realState(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realState(List<String> deviceNumberList) {
         ArrayList<AmmeterParameter> list = new ArrayList<>();
         deviceNumberList.forEach(deviceNum-> {
             AmmeterParameter ammeterParameter = new AmmeterParameter();

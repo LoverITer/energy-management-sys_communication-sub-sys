@@ -16,35 +16,31 @@ public interface AmmeterRemoteReader {
      * 实时数据
      *
      * @param deviceNumberList 电表表号List
-     * @param time             时间戳
      * @return List
      */
-    List<AmmeterParameter> realTelemetry(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realTelemetry(List<String> deviceNumberList);
 
     /**
      * 实时区域数据
      *
      * @param deviceNumberList 电表表号List
-     * @param time             时间戳
      * @return List
      */
-    List<AmmeterParameter> realRegion(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realRegion(List<String> deviceNumberList);
 
     /**
      * 实时表数据
      *
      * @param deviceNumberList 电表表号List
-     * @param time             时间戳
      * @return List
      */
-    List<AmmeterParameter> realMeter(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realMeter(List<String> deviceNumberList);
 
     /**
      * 实时状态数据
      *
      * @param deviceNumberList 电表表号List
-     * @param time             时间戳
      * @return List
      */
-    List<AmmeterParameter> realState(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realState(List<String> deviceNumberList);
 }

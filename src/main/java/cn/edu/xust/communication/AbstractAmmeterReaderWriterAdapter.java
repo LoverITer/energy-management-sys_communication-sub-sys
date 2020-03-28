@@ -79,22 +79,22 @@ public abstract class AbstractAmmeterReaderWriterAdapter
     }
 
     @Override
-    public List<AmmeterParameter> realTelemetry(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realTelemetry(List<String> deviceNumberList) {
        return null;
     }
 
     @Override
-    public List<AmmeterParameter> realRegion(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realRegion(List<String> deviceNumberList) {
         return null;
     }
 
     @Override
-    public List<AmmeterParameter> realMeter(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realMeter(List<String> deviceNumberList) {
         return null;
     }
 
     @Override
-    public List<AmmeterParameter> realState(List<String> deviceNumberList, long time) {
+    public List<AmmeterParameter> realState(List<String> deviceNumberList) {
         return null;
     }
 

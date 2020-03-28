@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.List;
 
 /**
@@ -31,7 +30,7 @@ public class AmmeterController {
     public List<AmmeterParameter> controller(@PathVariable(value = "ammeterId") String ammeterId){
         List<String> list = new ArrayList<>();
         list.add(ammeterId);
-        return ammeterRemoteReader.realTelemetry(list,new GregorianCalendar().getTimeInMillis());
+        return ammeterRemoteReader.realTelemetry(list);
     }
 
 
