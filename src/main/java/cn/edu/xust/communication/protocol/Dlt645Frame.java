@@ -120,7 +120,6 @@ public class Dlt645Frame {
             String controlCode=Dlt645FrameUtils.getControlBit(hexString);
             if (Objects.nonNull(controlCode)&&AmmeterReader.SlaveExceptionResponseFrame.getControlCode().equalsIgnoreCase(controlCode)) {
                 ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
-                String status=properties.get("ERR_"+Dlt645FrameUtils.getData(hexString));
                 ammeterParameter.setAmmeterStatus(AmmeterStatusEnum.DEVICE_ERROR.getMessage());
             }
             return ammeterParameter;

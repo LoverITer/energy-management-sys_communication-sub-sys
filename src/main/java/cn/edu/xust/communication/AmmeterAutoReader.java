@@ -54,6 +54,7 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 34 35");
         if (Objects.nonNull(result)) {
             AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            System.out.println(ammeterParameter.getCurrentAVoltage());
             return ammeterParameter.getCurrentAVoltage();
         }
         return null;
@@ -87,6 +88,7 @@ public class AmmeterAutoReader extends AbstractAmmeterReaderWriterAdapter {
                 AmmeterReader.MasterRequestFrame.getBaseDataLen(), "33 34 35 35");
         if (Objects.nonNull(result)) {
             AmmeterParameter ammeterParameter = this.parseAndPersistenceData(result);
+            System.out.println(ammeterParameter.getCurrentACurrent());
             return ammeterParameter.getCurrentACurrent();
         }
         return null;

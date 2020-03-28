@@ -190,4 +190,7 @@
         </set>
         where device_number=#{deviceNumber}
     </update>
+    <select id="selectByPk" parameterType="string" resultType="cn.edu.xust.bean.AmmeterParameter">
+        select * from ammeter_parameter when device_number=#{id}
+    </select>
 </mapper>

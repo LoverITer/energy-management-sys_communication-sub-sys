@@ -31,7 +31,7 @@ public class HashedWheelReader {
      * @param addressField  电表编号
      */
     public void executePer5Min(String remoteAddress, String addressField) {
-        this.executeScheduleTask(DEFAULT_TICK_DURATION, TimeUnit.SECONDS, remoteAddress, addressField);
+        this.executeScheduleTask(DEFAULT_TICK_DURATION, TimeUnit.MINUTES, remoteAddress, addressField);
     }
 
     /**

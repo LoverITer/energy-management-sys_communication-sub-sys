@@ -17,18 +17,13 @@ public enum AmmeterStatusEnum {
     /**
      *   网络故障
      */
-    NETWORK_ERROR(400, "network error"),
+    NETWORK_ERROR(400, "Network failure"),
 
     /**
      *  设备故障
      */
-    DEVICE_ERROR(500, "device error"),
+    DEVICE_ERROR(500, "Equipment failure");
 
-
-    /**
-     *  设备已断电
-     */
-    DEVICE_POWER_DOWN(501, "设备已断电");
 
 
     private final Integer code;

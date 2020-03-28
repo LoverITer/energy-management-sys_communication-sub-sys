@@ -1,6 +1,7 @@
 package cn.edu.xust.mapper;
 
 import cn.edu.xust.bean.AmmeterParameter;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -31,4 +32,6 @@ public interface AmmeterParameterMapper {
      * @return
      */
     int updateSelective(AmmeterParameter record);
+
+    AmmeterParameter selectByPk(@Param("id") String id);
 }

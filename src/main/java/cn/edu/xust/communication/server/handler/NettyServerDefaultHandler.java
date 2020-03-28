@@ -114,7 +114,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                     //AmmeterParameter ammeterParameter = new Dlt645Frame().analysis(hexString);
                     ChannelMap.bindDeviceNumAndDeviceSocket(ammeterId, remoteAddress);
                     //5分钟自动执行一次采集操作
-                    new HashedWheelReader().executePer5Min(remoteAddress, ammeterId);
+                    new HashedWheelReader().executePer1Hour(remoteAddress, ammeterId);
                     timingTaskLunch = false;
                 }
             } catch (Exception e) {

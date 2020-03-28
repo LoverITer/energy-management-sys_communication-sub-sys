@@ -1,5 +1,7 @@
 package cn.edu.xust.communication.remote;
 
+import cn.edu.xust.bean.AmmeterParameter;
+
 import java.util.List;
 
 /**
@@ -15,30 +17,34 @@ public interface AmmeterRemoteReader {
      *
      * @param deviceNumberList 电表表号List
      * @param time             时间戳
+     * @return List
      */
-    void realTelemetry(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realTelemetry(List<String> deviceNumberList, long time);
 
     /**
      * 实时区域数据
      *
      * @param deviceNumberList 电表表号List
      * @param time             时间戳
+     * @return List
      */
-    void realRegion(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realRegion(List<String> deviceNumberList, long time);
 
     /**
      * 实时表数据
      *
      * @param deviceNumberList 电表表号List
      * @param time             时间戳
+     * @return List
      */
-    void realMeter(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realMeter(List<String> deviceNumberList, long time);
 
     /**
      * 实时状态数据
      *
      * @param deviceNumberList 电表表号List
      * @param time             时间戳
+     * @return List
      */
-    void realState(List<String> deviceNumberList, long time);
+    List<AmmeterParameter> realState(List<String> deviceNumberList, long time);
 }

@@ -1,5 +1,6 @@
 package cn.edu.xust.communication;
 
+import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.remote.AmmeterRemoteReader;
 
 import java.util.List;
@@ -78,23 +79,23 @@ public abstract class AbstractAmmeterReaderWriterAdapter
     }
 
     @Override
-    public void realTelemetry(List<String> deviceNumberList, long time) {
-
+    public List<AmmeterParameter> realTelemetry(List<String> deviceNumberList, long time) {
+       return null;
     }
 
     @Override
-    public void realRegion(List<String> deviceNumberList, long time) {
-
+    public List<AmmeterParameter> realRegion(List<String> deviceNumberList, long time) {
+        return null;
     }
 
     @Override
-    public void realMeter(List<String> deviceNumberList, long time) {
-
+    public List<AmmeterParameter> realMeter(List<String> deviceNumberList, long time) {
+        return null;
     }
 
     @Override
-    public void realState(List<String> deviceNumberList, long time) {
-
+    public List<AmmeterParameter> realState(List<String> deviceNumberList, long time) {
+        return null;
     }
 
 

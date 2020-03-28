@@ -182,7 +182,7 @@ public class NettyServer implements NettyAsyncService,
                         }
                     });
                     if (latch.await(30, TimeUnit.SECONDS)) {
-                        System.out.println(((NettyServerDefaultHandler) channelHandler).getResult().getMessage());
+                        ((NettyServerDefaultHandler) channelHandler).getResult().setCode(1);
                         return ((NettyServerDefaultHandler) channelHandler).getResult();
                     }
                     //如果超时，将超时标志设置为1
