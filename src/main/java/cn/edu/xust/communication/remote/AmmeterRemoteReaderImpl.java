@@ -39,7 +39,7 @@ public class AmmeterRemoteReaderImpl extends AbstractAmmeterReaderWriterAdapter 
             ammeterParameter.setCurrentACurrent(reader.readCurrentIA());
             ammeterParameter.setCurrentBCurrent(reader.readCurrentIB());
             ammeterParameter.setCurrentCCurrent(reader.readCurrentIC());
-           //电压
+            //电压
             ammeterParameter.setCurrentAVoltage(reader.readCurrentVA());
             ammeterParameter.setCurrentBVoltage(reader.readCurrentVB());
             ammeterParameter.setCurrentCVoltage(reader.readCurrentVC());
