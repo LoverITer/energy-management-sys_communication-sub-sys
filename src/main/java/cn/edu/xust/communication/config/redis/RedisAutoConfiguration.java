@@ -1,8 +1,8 @@
 package cn.edu.xust.communication.config.redis;
 
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.*;
 
@@ -11,7 +11,7 @@ import org.springframework.data.redis.core.*;
  * @modified ：
  * @since ：2020/02/27 16:13
  */
-@Configuration
+@SpringBootConfiguration
 public class RedisAutoConfiguration extends org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration {
 
     @Bean(name = "redisTemplate")

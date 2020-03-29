@@ -11,7 +11,7 @@ package cn.edu.xust.communication.exception;
 public class NotFoundDeviceException extends RuntimeException {
 
     public NotFoundDeviceException() {
-        super("未发现目标设备");
+         super("The client is not connected!");
     }
 
     public NotFoundDeviceException(String message, Throwable cause) {

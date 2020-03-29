@@ -58,7 +58,7 @@ public final class Dlt645FrameUtils {
      * @return 电表的表号
      */
     public static String getAmmeterIdFromResponseFrame(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString)) {
             throw new NullPointerException("Illegal frame , cannot be parsed!");
         }
         StringBuilder eleMeterId = new StringBuilder();
@@ -110,11 +110,11 @@ public final class Dlt645FrameUtils {
      * @return 控制码
      */
     public static String getControlBit(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString)) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
+        if (Objects.nonNull(commands) && commands.length > 9) {
             return commands[8];
         }
         return null;
@@ -133,11 +133,11 @@ public final class Dlt645FrameUtils {
      * @return 数据域的长度
      */
     public static String getDataLength(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString)) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
+        if (Objects.nonNull(commands) && commands.length > 9) {
             return commands[9];
         }
         return null;
@@ -156,11 +156,11 @@ public final class Dlt645FrameUtils {
      * @return
      */
     public static String getStopBit(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString)) {
             return null;
         }
         String[] commands = HexConverter.getCommandStringArray(hexString);
-        if (commands.length >= Dlt645Frame.MIN_FRAME_LEN && commands.length <= Dlt645Frame.MAX_FRAME_LEN) {
+        if (Objects.nonNull(commands)) {
             return commands[commands.length - 1];
         }
         return null;
@@ -216,7 +216,7 @@ public final class Dlt645FrameUtils {
      * @return
      */
     public static String getData(String hexString) {
-        if (Objects.isNull(hexString) || hexString.length() < Dlt645Frame.MIN_FRAME_LEN * 2 || hexString.length() > Dlt645Frame.MAX_FRAME_LEN * 2) {
+        if (Objects.isNull(hexString)) {
             return null;
         }
         int dataLength = Integer.parseInt(Objects.requireNonNull(Dlt645FrameUtils.getDataLength(hexString)));
@@ -226,7 +226,7 @@ public final class Dlt645FrameUtils {
 
 
     public static void main(String[] args) {
-
+        System.out.println(checkSum("68 37 03 00 92 81 39 68 11 04 33 32 34 35"));
     }
 
 }

@@ -3,51 +3,67 @@ package cn.edu.xust.communication.server.handler;
 
 import cn.edu.xust.bean.AmmeterParameter;
 import cn.edu.xust.communication.config.ApplicationContextHolder;
+import cn.edu.xust.communication.model.Result;
 import cn.edu.xust.communication.protocol.Dlt645Frame;
 import cn.edu.xust.communication.server.HashedWheelReader;
 import cn.edu.xust.communication.server.NettyServer;
+import cn.edu.xust.communication.server.cache.ChannelMap;
+import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.HexConverter;
 import cn.edu.xust.mapper.AmmeterParameterMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Netty服务端业务处理handler，用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
+ * 服务器逻辑，负责用于监听、处理各种I/O事件，并将设备传上来的数据写进数据库
  *
  * @author ：huangxin
  * @modified ：
  * @since ：2020/02/18 16:54
  */
 @Component
-@ChannelHandler.Sharable
 @Slf4j
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
 
-
-    private boolean sechdelTaskLunch = true;
-
+    /**
+     * 电表号
+     */
     private String ammeterId;
     /**
-     * 将当前连接上的客户端连接存入map实现控制设备下发控制参数
-     * key 存通道的ip , value 是服务器和客户端之间的通信通道
+     * 开启定时采集任务标志
      */
-    private static ConcurrentHashMap<String, Channel> devices = new ConcurrentHashMap<>();
+    private boolean timingTaskLunch = true;
+    /**
+     * 同步锁
+     */
+    private CountDownLatch latch;
+
+    /**
+     * 消息的唯一ID
+     */
+    private String unidId = "";
+    /**
+     * 同步标志
+     */
+    private int rec;
+    /**
+     * 客户端返回的结果
+     */
+    private Result result = new Result();
+
 
     public NettyServerDefaultHandler() {
 
-    }
-
-
-    public static ConcurrentHashMap<String, Channel> getDevicesMap() {
-        return devices;
     }
 
 
@@ -59,14 +75,18 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Channel socketChannel = ctx.channel();
-        /*将设备的请求地址当作 map 的key*/
-        String remoteAddress = socketChannel.remoteAddress().toString();
-        if (!devices.containsKey(remoteAddress)) {
-            devices.put(remoteAddress, ctx.channel());
-            log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + devices.size());
-            NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME);
-        }
+        new Thread(()->{
+            Channel socketChannel = ctx.channel();
+            /*将设备remoteAddress当作 map 的key*/
+            String remoteAddress = socketChannel.remoteAddress().toString();
+            if (ChannelMap.getDeviceFromMap(remoteAddress) == null) {
+                ChannelMap.setChannelLock(remoteAddress, new ReentrantLock());
+                ChannelMap.setDevicesMap(remoteAddress, ctx);
+                log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + ChannelMap.currentOnlineDevicesNum());
+                NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME, UUID.randomUUID().toString());
+            }
+        }).start();
+
     }
 
     /**
@@ -77,43 +97,36 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        try {
-            ByteBuf buffer = (ByteBuf) msg;
-            //客户端IP
-            String remoteAddress = ctx.channel().remoteAddress().toString();
-            byte[] bytes = new byte[buffer.readableBytes()];
-            //复制内容到字节数组
-            buffer.readBytes(bytes);
-            String hexString = HexConverter.receiveHexToString(bytes);
-            //解析帧结构
-            System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
-            Dlt645Frame dlt645Frame = new Dlt645Frame().analysis(hexString);
-            if(dlt645Frame!=null) {
-                ammeterId = dlt645Frame.getAddressField();
-                if (sechdelTaskLunch) {
+        new Thread(()->{
+            try {
+                ByteBuf buffer = (ByteBuf) msg;
+                //客户端IP
+                String remoteAddress = ctx.channel().remoteAddress().toString();
+                byte[] bytes = new byte[buffer.readableBytes()];
+                //复制内容到字节数组
+                buffer.readBytes(bytes);
+                String hexString = HexConverter.receiveHexToString(bytes);
+                System.out.println("RECV HEX FROM：" + remoteAddress + ">\n" + HexConverter.fillBlank(hexString));
+                result.setMessage(hexString);
+                if (timingTaskLunch) {
+                    //解析第一次建立连接时的数据解析出ammeterId
+                    String ammeterId = Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString);
+                    //AmmeterParameter ammeterParameter = new Dlt645Frame().analysis(hexString);
+                    ChannelMap.bindDeviceNumAndDeviceSocket(ammeterId, remoteAddress);
                     //5分钟自动执行一次采集操作
-                    new HashedWheelReader().executePer5Min(remoteAddress, dlt645Frame.getAddressField());
-                    sechdelTaskLunch = false;
+                    new HashedWheelReader().executePer1Hour(remoteAddress, ammeterId);
+                    timingTaskLunch = false;
                 }
+            } catch (Exception e) {
+                log.error("server error:" + e.getMessage());
+            } finally {
+                if (Objects.nonNull(latch)) {
+                    latch.countDown();
+                }
+                rec = 0;
             }
-        } catch (Exception e) {
-            log.error("server error:"+e.getMessage());
-        }
-    }
+        }).start();
 
-    public static void logException(Exception e, String ammeterId, String ammeterStatus) {
-        Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
-        if (mapper instanceof AmmeterParameterMapper) {
-            AmmeterParameterMapper ammeterParameterMapper = (AmmeterParameterMapper) mapper;
-            AmmeterParameter ammeterParameter = new AmmeterParameter();
-            ammeterParameter.setDeviceNumber(ammeterId);
-            ammeterParameter.setAmmeterStatus(ammeterStatus);
-            int ret = ammeterParameterMapper.updateSelective(ammeterParameter);
-            if (ret <= 0) {
-                ammeterParameterMapper.insertSelective(ammeterParameter);
-            }
-        }
-        e.printStackTrace();
     }
 
 
@@ -139,7 +152,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("客户端 " + ctx.channel().remoteAddress() + "断开了连接");
-        devices.remove(ctx.channel().remoteAddress().toString());
+        ChannelMap.removeDeviceFormMap(ctx.channel().remoteAddress().toString());
         /*异步的关闭和客户端的通信通道，以免浪费资源*/
         ctx.channel().closeFuture().sync();
     }
@@ -154,8 +167,36 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         log.error(cause.getMessage());
-        devices.remove(ctx.channel().remoteAddress().toString().replace('/', ' '));
+        ChannelMap.removeDeviceFormMap(ctx.channel().remoteAddress().toString());
         ctx.close();
+    }
+
+    public static void logException(Exception e, String ammeterId, String ammeterStatus) {
+        Object mapper = ApplicationContextHolder.getBean("ammeterParamMapper");
+        if (mapper instanceof AmmeterParameterMapper) {
+            AmmeterParameterMapper ammeterParameterMapper = (AmmeterParameterMapper) mapper;
+            AmmeterParameter ammeterParameter = new AmmeterParameter();
+            ammeterParameter.setDeviceNumber(ammeterId);
+            ammeterParameter.setAmmeterStatus(ammeterStatus);
+            int ret = ammeterParameterMapper.updateSelective(ammeterParameter);
+            if (ret <= 0) {
+                ammeterParameterMapper.insertSelective(ammeterParameter);
+            }
+        }
+        e.printStackTrace();
+    }
+
+    public void resetSync(CountDownLatch latch, int rec) {
+        this.latch = latch;
+        this.rec = rec;
+    }
+
+    public void setUnidId(String s) {
+        this.unidId = s;
+    }
+
+    public Result getResult() {
+        return result;
     }
 
 }

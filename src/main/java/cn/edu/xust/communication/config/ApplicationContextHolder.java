@@ -1,13 +1,13 @@
 package cn.edu.xust.communication.config;
 
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
 /**
  * @author huangxin
  */
-@Component
+@SpringBootConfiguration
 public class ApplicationContextHolder implements ApplicationContextAware {
 
     private static ApplicationContext applicationContext;
