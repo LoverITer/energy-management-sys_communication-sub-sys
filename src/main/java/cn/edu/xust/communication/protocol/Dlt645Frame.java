@@ -124,13 +124,6 @@ public class Dlt645Frame {
             }
             return ammeterParameter;
         } else {
-            System.out.println("原始帧：" + Arrays.toString(commands));
-            System.out.println("帧起始符：" + commands[0]);
-            System.out.println("电表地址：" + Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
-            System.out.println("控制域：" + Dlt645FrameUtils.getControlBit(hexString));
-            System.out.println("数据域长度：" + Dlt645FrameUtils.getDataLength(hexString));
-            System.out.println("校验码：" + Dlt645FrameUtils.checkSumOfRecv(hexString));
-            System.out.println("停止位：" + Dlt645FrameUtils.getStopBit(hexString));
             ammeterParameter.setDeviceNumber(Dlt645FrameUtils.getAmmeterIdFromResponseFrame(hexString));
 
             //解析数据标识
