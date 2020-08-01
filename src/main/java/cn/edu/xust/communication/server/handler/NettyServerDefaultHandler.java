@@ -16,11 +16,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -35,31 +37,27 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
 
 
-    /**
-     * 电表号
-     */
+    /*** 电表号*/
     private String ammeterId;
-    /**
-     * 开启定时采集任务标志
-     */
+
+    /*** 开启定时采集任务标志*/
     private boolean timingTaskLunch = true;
-    /**
-     * 同步锁
-     */
+
+    /*** 同步锁*/
     private CountDownLatch latch;
 
-    /**
-     * 消息的唯一ID
-     */
-    private String unidId = "";
-    /**
-     * 同步标志
-     */
+    /*** 消息的唯一ID*/
+    private String uuidId = "";
+
+    /***同步标志*/
     private int rec;
-    /**
-     * 客户端返回的结果
-     */
+
+    /*** 客户端返回的结果*/
     private Result result = new Result();
+
+    /***线程池*/
+    @Autowired
+    private Executor executor;
 
 
     public NettyServerDefaultHandler() {
@@ -75,7 +73,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        new Thread(()->{
+        executor.execute(() -> {
             Channel socketChannel = ctx.channel();
             /*将设备remoteAddress当作 map 的key*/
             String remoteAddress = socketChannel.remoteAddress().toString();
@@ -85,7 +83,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                 log.info("client" + socketChannel.remoteAddress().toString() + " connected successful！Online: " + ChannelMap.currentOnlineDevicesNum());
                 NettyServer.writeCommand(ctx.channel().remoteAddress().toString(), Dlt645Frame.BROADCAST_FRAME, UUID.randomUUID().toString());
             }
-        }).start();
+        });
 
     }
 
@@ -97,7 +95,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        new Thread(()->{
+        executor.execute(() -> {
             try {
                 ByteBuf buffer = (ByteBuf) msg;
                 //客户端IP
@@ -125,8 +123,7 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
                 }
                 rec = 0;
             }
-        }).start();
-
+        });
     }
 
 
@@ -191,8 +188,8 @@ public class NettyServerDefaultHandler extends ChannelInboundHandlerAdapter {
         this.rec = rec;
     }
 
-    public void setUnidId(String s) {
-        this.unidId = s;
+    public void setUUidId(String s) {
+        this.uuidId = s;
     }
 
     public Result getResult() {

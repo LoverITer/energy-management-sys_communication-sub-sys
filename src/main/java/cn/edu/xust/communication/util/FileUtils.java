@@ -21,7 +21,7 @@ public class FileUtils {
 
     }
 
-    /**属性文件Map*/
+    /***属性文件Map*/
     private static final  Map<String,String> PROPERTIES;
 
     /**

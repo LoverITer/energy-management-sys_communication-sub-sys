@@ -6,6 +6,7 @@ import cn.edu.xust.communication.enums.AmmeterStatusEnum;
 import cn.edu.xust.communication.util.Dlt645FrameUtils;
 import cn.edu.xust.communication.util.FileUtils;
 import cn.edu.xust.communication.util.HexConverter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -17,6 +18,7 @@ import java.util.*;
  * @modified ：
  * @since ：2020/03/04 13:10
  */
+@Slf4j
 public class Dlt645Frame {
 
     /**
@@ -143,7 +145,7 @@ public class Dlt645Frame {
                 dataIdentification.append(DTID[i]);
             }
 
-            System.out.println("数据项名称：" + properties.get(dataIdentification.toString()));
+            log.info("数据项名称：" + properties.get(dataIdentification.toString()));
             //解析返回数据
              if (commands.length > Dlt645Frame.MIN_FRAME_LEN) {
                 int DTID0 = Integer.parseInt(DTID[0]);

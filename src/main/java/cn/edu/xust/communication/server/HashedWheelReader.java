@@ -21,6 +21,7 @@ public class HashedWheelReader {
      * 定时默认时间，单位分钟
      */
     private static final long DEFAULT_TICK_DURATION = 5L;
+    /***Timer**/
     private final Timer timer = new HashedWheelTimer();
 
 

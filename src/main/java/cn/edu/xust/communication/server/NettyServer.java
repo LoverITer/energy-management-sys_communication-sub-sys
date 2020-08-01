@@ -49,20 +49,15 @@ public class NettyServer implements NettyAsyncService,
     @Autowired
     private NettyServerDefaultHandler nettyServerDefaultHandler;
 
-    /**
-     * 监听的端口:可以在SpringBoot配置文件中配置
-     */
+    /*** 监听的端口:可以在SpringBoot配置文件中配置**/
     @Value("${netty.server.port}")
     private int port;
-    /**
-     * bossGroup：负责处理连接请求的线程组
-     */
+    /*** bossGroup：负责处理连接请求的线程组**/
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    /**
-     * worker：负责处理具体I/O时间的线程组
-     */
+    /*** worker：负责处理具体I/O时间的线程组**/
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
-
+    /***等待时间**/
+    private static final Integer WAIT_TIME=30;
 
     @Async(value = "asyncServiceExecutor")
     @Override
@@ -77,11 +72,10 @@ public class NettyServer implements NettyAsyncService,
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         /**
                          * 每一个客户端连接上来后都会执行这个方法，主要用于设置IO流的编码、解码以及IO事件的处理器等
-                         * @param socketChannel
-                         * @throws Exception
+                         * @param socketChannel SocketChannel
                          */
                         @Override
-                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                        protected void initChannel(SocketChannel socketChannel) {
                             ChannelPipeline pipeline = socketChannel.pipeline();
                             pipeline.addLast(nettyServerDefaultHandler);
                         }
@@ -92,7 +86,8 @@ public class NettyServer implements NettyAsyncService,
             }
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.info(e.getMessage());
+            this.destroy();
         } finally {
             //出现异常时关闭两个线程组
             bossGroup.shutdownGracefully();
@@ -105,7 +100,7 @@ public class NettyServer implements NettyAsyncService,
     public void destroy() {
         bossGroup.shutdownGracefully().syncUninterruptibly();
         workerGroup.shutdownGracefully().syncUninterruptibly();
-        System.out.println("Netty has been closed!");
+        log.info("Netty has been closed!");
     }
 
 
@@ -170,18 +165,18 @@ public class NettyServer implements NettyAsyncService,
                 ChannelHandler channelHandler = ctx.handler();
                 if (channelHandler instanceof NettyServerDefaultHandler) {
                     ((NettyServerDefaultHandler) channelHandler).resetSync(latch, 1);
-                    ((NettyServerDefaultHandler) channelHandler).setUnidId(uuid);
+                    ((NettyServerDefaultHandler) channelHandler).setUUidId(uuid);
                     ByteBuf byteBuf = Unpooled.buffer();
                     byteBuf.writeBytes(HexConverter.hexString2ByteArray(hexMsg));
                     channel.writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
                         String remoteAddress = channel.remoteAddress().toString();
                         if (channelFuture.isSuccess()) {
-                            System.out.println("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
+                            log.info("SEND HEX TO " + remoteAddress + ">\n" + hexMsg);
                         } else {
-                            System.err.println("SEND HEX TO " + remoteAddress + "FAILURE");
+                            log.error("SEND HEX TO " + remoteAddress + "FAILURE");
                         }
                     });
-                    if (latch.await(30, TimeUnit.SECONDS)) {
+                    if (latch.await(WAIT_TIME, TimeUnit.SECONDS)) {
                         ((NettyServerDefaultHandler) channelHandler).getResult().setCode(1);
                         return ((NettyServerDefaultHandler) channelHandler).getResult();
                     }
@@ -193,7 +188,7 @@ public class NettyServer implements NettyAsyncService,
                 return new Result(0, "Client is closed!!", null);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             return new Result(0, "Internal server error!", null);
         } finally {
             lock.unlock();
